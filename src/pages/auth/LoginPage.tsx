@@ -1,4 +1,5 @@
 import { ArrowRight } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import logo from '@/assets/logo.svg'
 
 function KakaoIcon() {
@@ -25,7 +26,7 @@ function GoogleIcon() {
   )
 }
 
-function KakaoLoginButton({ onClick }: { onClick?: () => void }) {
+function KakaoLoginButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
@@ -38,7 +39,7 @@ function KakaoLoginButton({ onClick }: { onClick?: () => void }) {
   )
 }
 
-function GoogleLoginButton({ onClick }: { onClick?: () => void }) {
+function GoogleLoginButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       type="button"
@@ -52,16 +53,20 @@ function GoogleLoginButton({ onClick }: { onClick?: () => void }) {
 }
 
 export default function LoginPage() {
+  const navigate = useNavigate()
+
+  const handleSocialLogin = () => {
+    navigate('/signup')
+  }
+
   return (
     <div className="flex flex-col items-center w-full px-[36px]">
-      {/* 로고 */}
       <img
         src={logo}
         alt="rapport 로고"
         className="w-[200px] h-[200px] mt-[128px] object-contain"
       />
 
-      {/* 앱 이름 */}
       <p
         className="text-[36px] leading-[22px] text-primary-900 mt-0 mb-0"
         style={{ fontFamily: "'Share Tech Mono', monospace" }}
@@ -69,13 +74,11 @@ export default function LoginPage() {
         rapport
       </p>
 
-      {/* 소셜 로그인 버튼 */}
       <div className="flex flex-col gap-[16px] w-full mt-[94px]">
-        <KakaoLoginButton />
-        <GoogleLoginButton />
+        <KakaoLoginButton onClick={handleSocialLogin} />
+        <GoogleLoginButton onClick={handleSocialLogin} />
       </div>
 
-      {/* 상담사 링크 */}
       <button
         type="button"
         className="mt-[104px] flex items-center gap-1 text-[13px] leading-[19.5px] text-primary-800 hover:underline"
