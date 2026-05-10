@@ -34,7 +34,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const borderClass = error
       ? 'border-semantic-error-text focus:border-semantic-error-text'
-      : 'border-neutral-100 focus:border-neutral-100'
+      : 'border-neutral-100 focus:border-primary-400'
 
     const paddingLeft = leftIcon ? 'pl-11' : 'px-4'
     const paddingRight = type === 'password' || rightIcon ? 'pr-11' : ''

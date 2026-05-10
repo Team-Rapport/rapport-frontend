@@ -147,7 +147,7 @@ export default function CounselorSignupPage() {
                 'w-full h-12 rounded-[6px] border bg-[#F9FAF9] px-4 pr-16 text-body-lg transition-colors placeholder:text-neutral-400 focus:outline-none',
                 emailError
                   ? 'border-semantic-error-text focus:border-semantic-error-text'
-                  : 'border-neutral-100 focus:border-neutral-100',
+                  : 'border-neutral-100 focus:border-primary-400',
                 codeVerified && 'border-primary-400 bg-neutral-50 text-neutral-400',
               )}
               disabled={codeVerified}
@@ -196,7 +196,7 @@ export default function CounselorSignupPage() {
                 'w-full h-12 rounded-[6px] border bg-[#F9FAF9] px-4 text-body-lg transition-colors placeholder:text-neutral-400 focus:outline-none disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed',
                 codeError
                   ? 'border-semantic-error-text'
-                  : 'border-neutral-100 focus:border-neutral-100',
+                  : 'border-neutral-100 focus:border-primary-400',
                 codeVerified && 'border-primary-400',
               )}
             />
