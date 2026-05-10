@@ -73,7 +73,7 @@ export default function SignupPage() {
     e.preventDefault()
     if (!isValid) return
     // TODO: API 연동 후 실제 회원가입 처리
-    navigate('/dashboard')
+    navigate('/signup-complete')
   }
 
   return (
