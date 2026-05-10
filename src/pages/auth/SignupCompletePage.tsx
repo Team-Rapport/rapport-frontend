@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/Button'
 interface SignupCompletePageProps {
   message: string
   nextPath: string
+  buttonLabel?: string
 }
 
-export function SignupCompleteView({ message, nextPath }: SignupCompletePageProps) {
+export function SignupCompleteView({ message, nextPath, buttonLabel = '다음' }: SignupCompletePageProps) {
   const navigate = useNavigate()
 
   return (
@@ -30,7 +31,7 @@ export function SignupCompleteView({ message, nextPath }: SignupCompletePageProp
           className="w-full"
           onClick={() => navigate(nextPath)}
         >
-          다음
+          {buttonLabel}
         </Button>
       </div>
     </div>
