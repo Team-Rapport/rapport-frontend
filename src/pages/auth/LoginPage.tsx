@@ -31,7 +31,7 @@ function KakaoLoginButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="w-full h-12 flex items-center justify-center gap-1.5 bg-[#FFEB00] rounded-lg font-bold text-sm text-[#212121] hover:brightness-95 active:brightness-90 transition-all"
+      className="w-full h-12 flex items-center justify-center gap-1.5 bg-[#FFEB00] rounded-[8px] font-bold text-sm text-[#212121] hover:brightness-95 active:brightness-90 transition-all"
     >
       <KakaoIcon />
       <span>카카오로 시작하기</span>
@@ -44,7 +44,7 @@ function GoogleLoginButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="w-full h-12 flex items-center justify-center gap-1.5 bg-white border border-neutral-200 rounded-lg font-bold text-sm text-neutral-800 hover:bg-neutral-50 active:bg-neutral-100 transition-all"
+      className="w-full h-12 flex items-center justify-center gap-1.5 bg-white border border-neutral-200 rounded-[8px] font-bold text-sm text-neutral-800 hover:bg-neutral-50 active:bg-neutral-100 transition-all"
     >
       <GoogleIcon />
       <span>Google로 시작하기</span>
@@ -81,6 +81,7 @@ export default function LoginPage() {
 
       <button
         type="button"
+        onClick={() => navigate('/counselor-login')}
         className="mt-[104px] flex items-center gap-1 text-[13px] leading-[19.5px] text-primary-800 hover:underline"
       >
         <span>상담사이신가요?</span>
