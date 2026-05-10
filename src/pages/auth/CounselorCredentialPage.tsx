@@ -144,10 +144,14 @@ function FileInput({
 function CredentialSection({
   entry,
   showDivider,
+  removable,
+  onRemove,
   onChange,
 }: {
   entry: CredentialEntry
   showDivider: boolean
+  removable: boolean
+  onRemove: () => void
   onChange: (updated: Partial<CredentialEntry>) => void
 }) {
   const handleFileChange = (file: File | null) => {
@@ -157,6 +161,19 @@ function CredentialSection({
   return (
     <>
       <div className="flex flex-col gap-[16px] px-[29px] py-[20px]">
+        {removable && (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={onRemove}
+              className="flex items-center gap-1 text-[12px] text-neutral-400 hover:text-semantic-error-text transition-colors"
+              aria-label="이 항목 삭제"
+            >
+              <X size={13} />
+              <span>삭제</span>
+            </button>
+          </div>
+        )}
         <TypeSelect
           value={entry.type}
           open={entry.typeOpen}
@@ -221,6 +238,8 @@ export default function CounselorCredentialPage() {
               key={entry.id}
               entry={entry}
               showDivider={i < entries.length - 1}
+              removable={i > 0}
+              onRemove={() => setEntries((prev) => prev.filter((e) => e.id !== entry.id))}
               onChange={(patch) => updateEntry(entry.id, patch)}
             />
           ))}
