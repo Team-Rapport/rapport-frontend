@@ -218,11 +218,11 @@ export default function CounselorCredentialPage() {
 
   const isValid = entries.some(isEntryValid)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement> | React.MouseEvent) => {
     e.preventDefault()
     if (!isValid) return
     // TODO: API 연동 — 자격 증명 제출
-    navigate('/dashboard')
+    navigate('/counselor-credential-complete')
   }
 
   return (

@@ -13,6 +13,8 @@ import CounselorLoginPage from '@/pages/auth/CounselorLoginPage'
 import CounselorSignupPage from '@/pages/auth/CounselorSignupPage'
 import CounselorSignupCompletePage from '@/pages/auth/CounselorSignupCompletePage'
 import CounselorCredentialPage from '@/pages/auth/CounselorCredentialPage'
+import CounselorCredentialCompletePage from '@/pages/auth/CounselorCredentialCompletePage'
+import CounselorPendingPage from '@/pages/auth/CounselorPendingPage'
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage'
 import DashboardPage from '@/pages/DashboardPage'
 import ChatPage from '@/pages/ChatPage'
@@ -45,6 +47,8 @@ export const router = createBrowserRouter([
           { path: '/counselor-signup', element: <CounselorSignupPage /> },
           { path: '/counselor-signup-complete', element: <CounselorSignupCompletePage /> },
           { path: '/counselor-credential', element: <CounselorCredentialPage /> },
+          { path: '/counselor-credential-complete', element: <CounselorCredentialCompletePage /> },
+          { path: '/counselor-pending', element: <CounselorPendingPage /> },
           { path: '/forgot-password', element: <ForgotPasswordPage /> },
         ],
       },
