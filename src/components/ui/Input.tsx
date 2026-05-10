@@ -12,7 +12,7 @@ export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElem
 }
 
 const baseInputClasses =
-  'w-full rounded-lg border bg-white px-4 text-body-lg transition-colors placeholder:text-neutral-400 focus:outline-none disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed'
+  'w-full rounded-[6px] border bg-[#F9FAF9] px-4 text-body-lg transition-colors placeholder:text-neutral-400 focus:outline-none disabled:bg-neutral-50 disabled:text-neutral-400 disabled:cursor-not-allowed'
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
   (
@@ -34,7 +34,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const borderClass = error
       ? 'border-semantic-error-text focus:border-semantic-error-text'
-      : 'border-neutral-200 focus:border-primary-200'
+      : 'border-neutral-100 focus:border-neutral-100'
 
     const paddingLeft = leftIcon ? 'pl-11' : 'px-4'
     const paddingRight = type === 'password' || rightIcon ? 'pr-11' : ''
