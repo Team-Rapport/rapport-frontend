@@ -8,6 +8,10 @@ import PublicRoute from './PublicRoute'
 
 import LoginPage from '@/pages/auth/LoginPage'
 import SignupPage from '@/pages/auth/SignupPage'
+import SignupCompletePage from '@/pages/auth/SignupCompletePage'
+import CounselorLoginPage from '@/pages/auth/CounselorLoginPage'
+import CounselorSignupPage from '@/pages/auth/CounselorSignupPage'
+import CounselorSignupCompletePage from '@/pages/auth/CounselorSignupCompletePage'
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage'
 import DashboardPage from '@/pages/DashboardPage'
 import ChatPage from '@/pages/ChatPage'
@@ -35,6 +39,10 @@ export const router = createBrowserRouter([
         children: [
           { path: '/login', element: <LoginPage /> },
           { path: '/signup', element: <SignupPage /> },
+          { path: '/signup-complete', element: <SignupCompletePage /> },
+          { path: '/counselor-login', element: <CounselorLoginPage /> },
+          { path: '/counselor-signup', element: <CounselorSignupPage /> },
+          { path: '/counselor-signup-complete', element: <CounselorSignupCompletePage /> },
           { path: '/forgot-password', element: <ForgotPasswordPage /> },
         ],
       },
