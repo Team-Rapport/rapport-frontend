@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { TopNavBar } from '@/components/ui/TopNavBar'
 import { cn } from '@/lib/utils'
 
-// 이름: 한글/영문만 허용, 특수문자·초성 금지
 const NAME_REGEX = /^[가-힣a-zA-Z\s]+$/
-// 전화번호: 010-XXXX-XXXX 형태
 const PHONE_REGEX = /^01[0-9]-\d{3,4}-\d{4}$/
 
 function formatPhone(value: string): string {
@@ -15,29 +13,6 @@ function formatPhone(value: string): string {
   if (digits.length <= 3) return digits
   if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`
   return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`
-}
-
-interface TopNavBarProps {
-  title: string
-  onBack: () => void
-}
-
-function TopNavBar({ title, onBack }: TopNavBarProps) {
-  return (
-    <div className="w-full h-[42px] flex items-center relative">
-      <button
-        type="button"
-        onClick={onBack}
-        className="absolute left-0 flex items-center gap-1 h-full px-2 text-neutral-900 hover:text-neutral-600 transition-colors"
-        aria-label="뒤로가기"
-      >
-        <ChevronLeft size={20} strokeWidth={2} />
-      </button>
-      <span className="w-full text-center text-[17px] font-bold text-neutral-900 tracking-[-0.408px]">
-        {title}
-      </span>
-    </div>
-  )
 }
 
 export default function SignupPage() {
