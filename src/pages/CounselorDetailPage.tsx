@@ -1,110 +1,132 @@
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { LabelBadge } from '@/components/common/LabelBadge'
 import { Divider } from '@/components/common/Divider'
+import { springFetch } from '@/lib/springApi'
 
-interface Counselor {
-  id: string
+interface CounselorDetail {
+  userId: number
   name: string
-  tagline: string
-  specialties: string[]
-  sessionTypes: string[]
-  career: { year: string; description: string }[]
-  price: string
-  availableTimes: string[]
-  education: string
-  avatarUrl?: string
+  bio?: string
+  specializations?: string[]
+  approaches?: string[]
+  consultationModes?: Array<'ONLINE' | 'FACE_TO_FACE' | string>
+  minPrice?: number
+  profileImageUrl?: string
+  licenseType?: string
+  experienceYears?: number
+  averageRating?: number
+  reviewCount?: number
 }
 
-const MOCK_COUNSELORS: Counselor[] = [
-  {
-    id: 'c001',
-    name: '김수연',
-    tagline: '불안과 우울, 함께 걸어가겠습니다',
-    specialties: ['불안', '우울', '공황', '스트레스'],
-    sessionTypes: ['대면', '비대면'],
-    career: [
-      { year: '2018~현재', description: '마음채움 상담센터 수석 상담사' },
-      { year: '2015~2018', description: '서울 대학교 상담센터 인턴' },
-    ],
-    price: '60,000원 / 50분',
-    availableTimes: ['월 10:00~18:00', '수 10:00~18:00', '금 10:00~16:00'],
-    education: '한국상담심리학회 상담심리사 1급',
-    avatarUrl: 'https://i.pravatar.cc/400?img=47',
-  },
-  {
-    id: 'c002',
-    name: '박지훈',
-    tagline: '관계와 직장 스트레스 전문 상담사',
-    specialties: ['관계', '직장 스트레스', '번아웃'],
-    sessionTypes: ['비대면'],
-    career: [
-      { year: '2019~현재', description: '온라인 심리상담 플랫폼 전문 상담사' },
-    ],
-    price: '55,000원 / 50분',
-    availableTimes: ['화 14:00~20:00', '목 14:00~20:00', '토 10:00~14:00'],
-    education: '임상심리사 2급',
-    avatarUrl: 'https://i.pravatar.cc/400?img=53',
-  },
-  {
-    id: 'c003',
-    name: '이미래',
-    tagline: '자존감 회복과 트라우마 치유',
-    specialties: ['자존감', '트라우마', 'PTSD'],
-    sessionTypes: ['대면', '비대면'],
-    career: [
-      { year: '2017~현재', description: '트라우마 전문 상담센터 상담사' },
-    ],
-    price: '65,000원 / 50분',
-    availableTimes: ['월 13:00~19:00', '수 13:00~19:00'],
-    education: '정신건강 임상심리사 2급',
-    avatarUrl: 'https://i.pravatar.cc/400?img=48',
-  },
-  {
-    id: 'c004',
-    name: '최현우',
-    tagline: '청소년·성인 모두 환영합니다',
-    specialties: ['청소년', '진로', '가족'],
-    sessionTypes: ['대면'],
-    career: [
-      { year: '2016~현재', description: '청소년 상담 복지센터 전문 상담사' },
-    ],
-    price: '50,000원 / 50분',
-    availableTimes: ['화 15:00~19:00', '금 15:00~19:00'],
-    education: '청소년 상담사 2급',
-    avatarUrl: 'https://i.pravatar.cc/400?img=52',
-  },
-  {
-    id: 'c005',
-    name: '정소희',
-    tagline: '마음의 무게를 함께 내려놓아요',
-    specialties: ['불안', '수면', '번아웃'],
-    sessionTypes: ['비대면'],
-    career: [
-      { year: '2020~현재', description: '비대면 심리상담 서비스 상담사' },
-    ],
-    price: '58,000원 / 50분',
-    availableTimes: ['월 20:00~22:00', '수 20:00~22:00', '토 14:00~18:00'],
-    education: '상담심리사 2급',
-    avatarUrl: 'https://i.pravatar.cc/400?img=44',
-  },
-]
+interface SessionTypePrice {
+  id: number
+  sessionTypeId: number
+  name: string
+  price: number
+}
+
+interface ReviewResponse {
+  reviewId?: number
+  rating?: number
+  content?: string
+  comment?: string
+  clientName?: string
+  createdAt?: string
+}
+
+interface PageResponse<T> {
+  content?: T[]
+}
+
+interface ApiResponse<T> {
+  success?: boolean
+  data?: T
+}
 
 export default function CounselorDetailPage() {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
-  const counselor = MOCK_COUNSELORS.find((c) => c.id === id) ?? MOCK_COUNSELORS[0]
+  const [counselor, setCounselor] = useState<CounselorDetail | null>(null)
+  const [sessionTypes, setSessionTypes] = useState<SessionTypePrice[]>([])
+  const [reviews, setReviews] = useState<ReviewResponse[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const run = async () => {
+      if (!id) return
+      setLoading(true)
+      try {
+        const [detailRes, typeRes, reviewRes] = await Promise.all([
+          springFetch(`/api/v1/counselors/${id}`),
+          springFetch(`/api/v1/counselors/${id}/session-types`),
+          springFetch(`/api/v1/counselors/${id}/reviews?page=0&size=5`),
+        ])
+
+        if (!detailRes.ok) throw new Error('detail failed')
+        const detailPayload: ApiResponse<CounselorDetail> = await detailRes.json()
+        setCounselor(detailPayload?.data ?? null)
+
+        if (typeRes.ok) {
+          const typePayload: ApiResponse<SessionTypePrice[]> = await typeRes.json()
+          setSessionTypes(typePayload?.data ?? [])
+        }
+        if (reviewRes.ok) {
+          const reviewPayload: ApiResponse<PageResponse<ReviewResponse> | ReviewResponse[]> = await reviewRes.json()
+          const data = reviewPayload?.data
+          const normalized = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.content)
+              ? data.content
+              : []
+          setReviews(normalized)
+        }
+
+        setError(null)
+      } catch {
+        setError('상담사 정보를 불러오지 못했어요.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    void run()
+  }, [id])
+
+  const sessionTypeNames = useMemo(
+    () => sessionTypes.map((s) => s.name).filter(Boolean),
+    [sessionTypes],
+  )
+
+  const modeLabels = useMemo(() => {
+    return (counselor?.consultationModes ?? []).map((mode) => {
+      if (mode === 'ONLINE') return '비대면'
+      if (mode === 'FACE_TO_FACE') return '대면'
+      return mode
+    })
+  }, [counselor?.consultationModes])
+
+  const minPrice = useMemo(() => {
+    if (counselor?.minPrice != null) return counselor.minPrice
+    if (!sessionTypes.length) return null
+    return Math.min(...sessionTypes.map((s) => s.price))
+  }, [counselor?.minPrice, sessionTypes])
 
   return (
     <div className="flex flex-col min-h-full">
       <PageHeader title="" />
+      {loading && <p className="px-5 py-4 text-caption text-neutral-400">불러오는 중...</p>}
+      {error && <p className="px-5 py-4 text-caption text-semantic-error-text">{error}</p>}
+      {!counselor ? null : (
+        <>
 
       {/* Hero image */}
       <div className="w-full h-56 bg-primary-50 overflow-hidden shrink-0">
-        {counselor.avatarUrl ? (
+        {counselor.profileImageUrl ? (
           <img
-            src={counselor.avatarUrl}
+            src={counselor.profileImageUrl}
             alt={counselor.name}
             className="w-full h-full object-cover object-top"
           />
@@ -118,7 +140,7 @@ export default function CounselorDetailPage() {
       {/* Hero text */}
       <div className="px-5 py-4">
         <h1 className="text-h1-mobile font-bold text-neutral-900">{counselor.name}</h1>
-        <p className="text-body-md text-neutral-600 mt-1">{counselor.tagline}</p>
+        <p className="text-body-md text-neutral-600 mt-1">{counselor.bio ?? '상담사 소개가 준비 중입니다.'}</p>
       </div>
 
       {/* 전문 분야 */}
@@ -126,7 +148,7 @@ export default function CounselorDetailPage() {
       <section className="px-5 py-4">
         <h3 className="text-[16px] font-bold text-neutral-900 mb-3">전문 분야</h3>
         <div className="flex flex-wrap gap-2">
-          {counselor.specialties.map((s) => (
+          {(counselor.specializations ?? []).map((s) => (
             <LabelBadge key={s}>{s}</LabelBadge>
           ))}
         </div>
@@ -137,8 +159,19 @@ export default function CounselorDetailPage() {
       <section className="px-5 py-4">
         <h3 className="text-[16px] font-bold text-neutral-900 mb-3">상담 방식</h3>
         <div className="flex flex-wrap gap-2">
-          {counselor.sessionTypes.map((t) => (
+          {(modeLabels.length ? modeLabels : sessionTypeNames).map((t) => (
             <LabelBadge key={t}>{t}</LabelBadge>
+          ))}
+        </div>
+      </section>
+
+      {/* 상담 기법 */}
+      <Divider />
+      <section className="px-5 py-4">
+        <h3 className="text-[16px] font-bold text-neutral-900 mb-3">상담 기법</h3>
+        <div className="flex flex-wrap gap-2">
+          {(counselor.approaches ?? []).map((approach) => (
+            <LabelBadge key={approach}>{approach}</LabelBadge>
           ))}
         </div>
       </section>
@@ -148,13 +181,10 @@ export default function CounselorDetailPage() {
       <section className="px-5 py-4">
         <h3 className="text-[16px] font-bold text-neutral-900 mb-3">경력 및 학력</h3>
         <div className="flex flex-col gap-2">
-          <p className="text-body-md text-neutral-800">{counselor.education}</p>
-          {counselor.career.map((c, i) => (
-            <div key={i} className="flex gap-3">
-              <span className="text-caption text-neutral-400 shrink-0">{c.year}</span>
-              <span className="text-caption text-neutral-600">{c.description}</span>
-            </div>
-          ))}
+          <p className="text-body-md text-neutral-800">{counselor.licenseType ?? '자격 정보 없음'}</p>
+          <p className="text-caption text-neutral-600">
+            경력 {counselor.experienceYears ?? 0}년
+          </p>
         </div>
       </section>
 
@@ -162,20 +192,42 @@ export default function CounselorDetailPage() {
       <Divider />
       <section className="px-5 py-4">
         <h3 className="text-[16px] font-bold text-neutral-900 mb-2">상담 비용</h3>
-        <p className="text-body-lg font-medium text-neutral-900">{counselor.price}</p>
+        <p className="text-body-lg font-medium text-neutral-900">
+          {minPrice != null ? `${minPrice.toLocaleString()}원~` : '상담 유형별 상이'}
+        </p>
         <p className="text-caption text-neutral-400 mt-1">
-          첫 상담은 10% 할인이 적용됩니다
+          상담 유형에 따라 비용이 달라질 수 있어요
         </p>
       </section>
 
-      {/* 가능 시간 */}
+      {/* 리뷰 */}
       <Divider />
       <section className="px-5 py-4">
-        <h3 className="text-[16px] font-bold text-neutral-900 mb-3">상담 가능 시간</h3>
-        <div className="flex flex-col gap-1.5">
-          {counselor.availableTimes.map((t) => (
-            <p key={t} className="text-body-md text-neutral-600">{t}</p>
-          ))}
+        <h3 className="text-[16px] font-bold text-neutral-900 mb-3">리뷰</h3>
+        <p className="text-body-md text-neutral-800">
+          평점 {counselor.averageRating?.toFixed(1) ?? '-'} ({counselor.reviewCount ?? 0}개)
+        </p>
+        <div className="mt-3 flex flex-col gap-3">
+          {reviews.length === 0 ? (
+            <p className="text-caption text-neutral-400">아직 등록된 리뷰가 없어요.</p>
+          ) : (
+            reviews.map((review, idx) => (
+              <div key={review.reviewId ?? idx} className="rounded-md border border-neutral-100 bg-neutral-50 px-3 py-3">
+                <p className="text-caption text-neutral-700">평점 {review.rating ?? '-'}</p>
+                <p className="text-caption text-neutral-800 mt-1 whitespace-pre-wrap">
+                  {review.content?.trim() || review.comment?.trim() || '내용 없음'}
+                </p>
+                {review.clientName && (
+                  <p className="text-small text-neutral-500 mt-1">{review.clientName}</p>
+                )}
+                {review.createdAt && (
+                  <p className="text-small text-neutral-400 mt-1">
+                    {new Date(review.createdAt).toLocaleDateString('ko-KR')}
+                  </p>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </section>
 
@@ -185,11 +237,13 @@ export default function CounselorDetailPage() {
           variant="primary"
           size="lg"
           className="w-full rounded-lg"
-          onClick={() => navigate(`/booking/${counselor.id}`)}
+          onClick={() => navigate(`/booking/${counselor.userId}`)}
         >
           예약하기
         </Button>
       </div>
+      </>
+      )}
     </div>
   )
 }
