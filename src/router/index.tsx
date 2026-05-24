@@ -17,6 +17,7 @@ import CounselorCredentialCompletePage from '@/pages/auth/CounselorCredentialCom
 import CounselorPendingPage from '@/pages/auth/CounselorPendingPage'
 import CounselorProfilePage from '@/pages/auth/CounselorProfilePage'
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage'
+import OAuthCallbackPage from '@/pages/auth/OAuthCallbackPage'
 import DashboardPage from '@/pages/DashboardPage'
 import ChatPage from '@/pages/ChatPage'
 import ReportPage from '@/pages/ReportPage'
@@ -55,6 +56,7 @@ export const router = createBrowserRouter([
           { path: '/counselor-pending', element: <CounselorPendingPage /> },
           { path: '/counselor-profile', element: <CounselorProfilePage /> },
           { path: '/forgot-password', element: <ForgotPasswordPage /> },
+          { path: '/oauth2/callback', element: <OAuthCallbackPage /> },
         ],
       },
     ],

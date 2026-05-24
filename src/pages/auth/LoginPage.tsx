@@ -26,38 +26,37 @@ function GoogleIcon() {
   )
 }
 
-function KakaoLoginButton({ onClick }: { onClick: () => void }) {
+function KakaoLoginButton({ href }: { href: string }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <a
+      href={href}
       className="w-full h-12 flex items-center justify-center gap-1.5 bg-[#FFEB00] rounded-[8px] font-bold text-sm text-[#212121] hover:brightness-95 active:brightness-90 transition-all"
     >
       <KakaoIcon />
       <span>카카오로 시작하기</span>
-    </button>
+    </a>
   )
 }
 
-function GoogleLoginButton({ onClick }: { onClick: () => void }) {
+function GoogleLoginButton({ href }: { href: string }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <a
+      href={href}
       className="w-full h-12 flex items-center justify-center gap-1.5 bg-white border border-neutral-200 rounded-[8px] font-bold text-sm text-neutral-800 hover:bg-neutral-50 active:bg-neutral-100 transition-all"
     >
       <GoogleIcon />
       <span>Google로 시작하기</span>
-    </button>
+    </a>
   )
 }
 
 export default function LoginPage() {
   const navigate = useNavigate()
 
-  const handleSocialLogin = () => {
-    navigate('/signup')
-  }
+  const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
+
+  const kakaoAuthUrl = `${apiBaseUrl}/api/v1/auth/oauth2/authorize/kakao`
+  const googleAuthUrl = `${apiBaseUrl}/api/v1/auth/oauth2/authorize/google`
 
   return (
     <div className="flex flex-col items-center w-full px-[36px]">
@@ -75,8 +74,8 @@ export default function LoginPage() {
       </p>
 
       <div className="flex flex-col gap-[16px] w-full mt-[94px]">
-        <KakaoLoginButton onClick={handleSocialLogin} />
-        <GoogleLoginButton onClick={handleSocialLogin} />
+        <KakaoLoginButton href={kakaoAuthUrl} />
+        <GoogleLoginButton href={googleAuthUrl} />
       </div>
 
       <button

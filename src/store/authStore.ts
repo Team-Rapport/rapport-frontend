@@ -10,9 +10,10 @@ interface User {
 
 interface AuthState {
   accessToken: string | null
+  refreshToken: string | null
   user: User | null
   isLoggedIn: boolean
-  setAuth: (token: string, user: User) => void
+  setAuth: (auth: { accessToken: string; refreshToken?: string | null; user: User }) => void
   clearAuth: () => void
 }
 
@@ -20,12 +21,13 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       accessToken: null,
+      refreshToken: null,
       user: null,
       isLoggedIn: false,
-      setAuth: (token, user) =>
-        set({ accessToken: token, user, isLoggedIn: true }),
+      setAuth: ({ accessToken, refreshToken = null, user }) =>
+        set({ accessToken, refreshToken, user, isLoggedIn: true }),
       clearAuth: () =>
-        set({ accessToken: null, user: null, isLoggedIn: false }),
+        set({ accessToken: null, refreshToken: null, user: null, isLoggedIn: false }),
     }),
     {
       name: 'rapport-auth',
