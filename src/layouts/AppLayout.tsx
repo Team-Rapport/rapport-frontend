@@ -12,6 +12,11 @@ const NAV_ITEMS = [
 export default function AppLayout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const isChatPage =
+    location.pathname === '/chat' || location.pathname.startsWith('/chat/')
+  const isReportPage =
+    location.pathname === '/report/latest' || location.pathname.startsWith('/report/')
+  const hideBottomNav = isChatPage || isReportPage
 
   return (
     <div className="min-h-screen bg-neutral-50 flex justify-center">
@@ -36,35 +41,37 @@ export default function AppLayout() {
         </header>
 
         {/* 콘텐츠 */}
-        <main className="flex-1 overflow-y-auto flex flex-col">
+        <main className={`flex-1 flex flex-col ${isChatPage ? 'overflow-hidden' : 'overflow-y-auto'}`}>
           <Outlet />
         </main>
 
         {/* 하단 네비게이션 */}
-        <nav className="sticky bottom-0 z-50 h-16 bg-white border-t border-neutral-100 flex">
-          {NAV_ITEMS.map(({ label, icon: Icon, path }) => {
-            const isActive =
-              location.pathname === path || location.pathname.startsWith(path + '/')
-            return (
-              <button
-                key={path}
-                type="button"
-                onClick={() => navigate(path)}
-                className="flex-1 flex flex-col items-center justify-center gap-0.5"
-              >
-                <Icon
-                  size={22}
-                  className={isActive ? 'text-primary-600' : 'text-neutral-400'}
-                />
-                <span
-                  className={`text-small font-medium ${isActive ? 'text-primary-600' : 'text-neutral-400'}`}
+        {!hideBottomNav && (
+          <nav className="sticky bottom-0 z-50 h-16 bg-white border-t border-neutral-100 flex">
+            {NAV_ITEMS.map(({ label, icon: Icon, path }) => {
+              const isActive =
+                location.pathname === path || location.pathname.startsWith(path + '/')
+              return (
+                <button
+                  key={path}
+                  type="button"
+                  onClick={() => navigate(path)}
+                  className="flex-1 flex flex-col items-center justify-center gap-0.5"
                 >
-                  {label}
-                </span>
-              </button>
-            )
-          })}
-        </nav>
+                  <Icon
+                    size={22}
+                    className={isActive ? 'text-primary-600' : 'text-neutral-400'}
+                  />
+                  <span
+                    className={`text-small font-medium ${isActive ? 'text-primary-600' : 'text-neutral-400'}`}
+                  >
+                    {label}
+                  </span>
+                </button>
+              )
+            })}
+          </nav>
+        )}
       </div>
     </div>
   )
