@@ -1,7 +1,7 @@
 import { useAuthStore } from '@/store/authStore'
 
 export const DevAuthToggle = () => {
-  const { isLoggedIn, setAuth, clearAuth } = useAuthStore()
+  const { setAuth, clearAuth } = useAuthStore()
 
   if (import.meta.env.PROD) return null
 

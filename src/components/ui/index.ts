@@ -1,4 +1,5 @@
 export { Button } from './Button'
+export { TopNavBar } from './TopNavBar'
 export { Input } from './Input'
 export { Badge } from './Badge'
 export { Card, ReportCard, CounselorCard } from './Card'

@@ -43,7 +43,7 @@ const variantBase: Record<NonNullable<ButtonProps['variant']>, string> = {
   primary: 'bg-primary-600 hover:bg-primary-800 rounded-sm',
   outline: 'border border-neutral-200 bg-white hover:bg-neutral-50 rounded-sm',
   ghost:   'hover:bg-primary-50 rounded-sm',
-  chip:    'rounded-full border h-9 px-4',
+  chip:    'rounded-full border h-9 px-4 text-body-md',
 }
 
 const variantColor: Record<NonNullable<ButtonProps['variant']>, string> = {

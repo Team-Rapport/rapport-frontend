@@ -8,6 +8,23 @@ body {
   margin: 0;
 }
 
+/* 브라우저 자동완성 시 배경색 강제 override */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #F9FAF9 inset;
+  box-shadow: 0 0 0 1000px #F9FAF9 inset;
+  -webkit-text-fill-color: #1E221E;
+}
+
 #root {
   min-height: 100svh;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

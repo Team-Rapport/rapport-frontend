@@ -119,62 +119,68 @@ const CounselorCard = forwardRef<HTMLDivElement, CounselorCardProps>(
   ) => (
     <Card
       ref={ref}
-      className={cn('w-[160px] p-4 flex flex-col items-center gap-2', className)}
+      className={cn('w-[160px] flex flex-col overflow-hidden', className)}
       {...props}
     >
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt={name}
-          className="w-14 h-14 rounded-full object-cover bg-neutral-100"
-        />
-      ) : (
-        <div className="w-14 h-14 rounded-full bg-neutral-100 flex items-center justify-center text-h4 font-medium text-neutral-600">
-          {name.charAt(0)}
-        </div>
-      )}
-
-      <span className="text-h4 font-medium text-neutral-900 text-center">{name}</span>
-
-      <div className="flex flex-wrap gap-1 justify-center">
-        {specialties.map((s) => (
-          <Badge key={s} variant="specialty">
-            {s}
-          </Badge>
-        ))}
+      {/* Top image area */}
+      <div className="w-full h-24 bg-primary-50 overflow-hidden rounded-t-xl shrink-0">
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt={name}
+            className="w-full h-full object-cover object-top"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-[32px] font-bold text-primary-200">
+            {name.charAt(0)}
+          </div>
+        )}
       </div>
 
-      {rating != null && (
-        <div className="flex items-center gap-1">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            className="text-accent-400 shrink-0"
-            aria-hidden="true"
-          >
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-          </svg>
-          <span className="text-body-md font-medium text-neutral-800">
-            {rating.toFixed(1)}
-          </span>
-          {reviewCount != null && (
-            <span className="text-caption text-neutral-400">
-              ({reviewCount.toLocaleString()})
-            </span>
-          )}
+      {/* Content */}
+      <div className="p-3 flex flex-col items-center gap-2">
+        <span className="text-h4 font-medium text-neutral-900 text-center">{name}</span>
+
+        <div className="flex flex-wrap gap-1 justify-center">
+          {specialties.map((s) => (
+            <Badge key={s} variant="specialty">
+              {s}
+            </Badge>
+          ))}
         </div>
-      )}
 
-      {price && (
-        <span className="text-body-md font-medium text-neutral-900">{price}</span>
-      )}
+        {rating != null && (
+          <div className="flex items-center gap-1">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="text-accent-400 shrink-0"
+              aria-hidden="true"
+            >
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+            </svg>
+            <span className="text-body-md font-medium text-neutral-800">
+              {rating.toFixed(1)}
+            </span>
+            {reviewCount != null && (
+              <span className="text-caption text-neutral-400">
+                ({reviewCount.toLocaleString()})
+              </span>
+            )}
+          </div>
+        )}
 
-      <Button variant="primary" className="w-full" onClick={onBook}>
-        예약하기
-      </Button>
+        {price && (
+          <span className="text-body-md font-medium text-neutral-900">{price}</span>
+        )}
+
+        <Button variant="primary" className="w-full" onClick={onBook}>
+          예약하기
+        </Button>
+      </div>
     </Card>
   ),
 )

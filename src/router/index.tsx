@@ -15,6 +15,7 @@ import CounselorSignupCompletePage from '@/pages/auth/CounselorSignupCompletePag
 import CounselorCredentialPage from '@/pages/auth/CounselorCredentialPage'
 import CounselorCredentialCompletePage from '@/pages/auth/CounselorCredentialCompletePage'
 import CounselorPendingPage from '@/pages/auth/CounselorPendingPage'
+import CounselorProfilePage from '@/pages/auth/CounselorProfilePage'
 import ForgotPasswordPage from '@/pages/auth/ForgotPasswordPage'
 import DashboardPage from '@/pages/DashboardPage'
 import ChatPage from '@/pages/ChatPage'
@@ -23,6 +24,9 @@ import CounselorListPage from '@/pages/CounselorListPage'
 import CounselorDetailPage from '@/pages/CounselorDetailPage'
 import BookingPage from '@/pages/BookingPage'
 import MyPage from '@/pages/MyPage'
+import IntakeFormPage from '@/pages/IntakeFormPage'
+import MySessionsPage from '@/pages/MySessionsPage'
+import ReviewPage from '@/pages/ReviewPage'
 
 function RootRedirect() {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
@@ -49,6 +53,7 @@ export const router = createBrowserRouter([
           { path: '/counselor-credential', element: <CounselorCredentialPage /> },
           { path: '/counselor-credential-complete', element: <CounselorCredentialCompletePage /> },
           { path: '/counselor-pending', element: <CounselorPendingPage /> },
+          { path: '/counselor-profile', element: <CounselorProfilePage /> },
           { path: '/forgot-password', element: <ForgotPasswordPage /> },
         ],
       },
@@ -68,6 +73,9 @@ export const router = createBrowserRouter([
           { path: '/counselors/:id', element: <CounselorDetailPage /> },
           { path: '/booking/:counselorId', element: <BookingPage /> },
           { path: '/mypage', element: <MyPage /> },
+          { path: '/intake-form', element: <IntakeFormPage /> },
+          { path: '/sessions', element: <MySessionsPage /> },
+          { path: '/review/:sessionId', element: <ReviewPage /> },
         ],
       },
     ],
