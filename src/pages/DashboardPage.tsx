@@ -1,53 +1,79 @@
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { CounselorCard } from '@/components/ui/Card'
 import { Divider } from '@/components/common/Divider'
+import { AttachedReportCard } from '@/components/report/AttachedReportCard'
+import { springFetch } from '@/lib/springApi'
 
-const MOCK_REPORT = {
-  date: '2025년 5월 19일',
-  id: 'r001',
+interface BookingResponse {
+  bookingId: number
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED' | string
+  counselorId: number
+  counselorName: string
+  bookedDate?: string
+  bookedStartTime?: string
 }
 
-const MOCK_BOOKING = {
-  dateTime: '2025년 6월 10일 화요일 14:00',
-  counselorName: '김수연 상담사',
-  id: 'b001',
+interface ReportSummary {
+  reportId: number
+  createdAt?: string
+  depressionScore?: number
+  anxietyScore?: number
+  stressScore?: number
 }
 
-const MOCK_COUNSELORS = [
-  {
-    id: 'c001',
-    name: '김수연',
-    specialties: ['불안', '우울'],
-    rating: 4.9,
-    reviewCount: 128,
-    price: '60,000원',
-    avatarUrl: 'https://i.pravatar.cc/300?img=47',
-  },
-  {
-    id: 'c002',
-    name: '박지훈',
-    specialties: ['관계', '직장'],
-    rating: 4.8,
-    reviewCount: 95,
-    price: '55,000원',
-    avatarUrl: 'https://i.pravatar.cc/300?img=53',
-  },
-  {
-    id: 'c003',
-    name: '이미래',
-    specialties: ['자존감', '트라우마'],
-    rating: 4.7,
-    reviewCount: 63,
-    price: '65,000원',
-    avatarUrl: 'https://i.pravatar.cc/300?img=48',
-  },
-]
+interface PublicProfileResponse {
+  userId: number
+  name: string
+  profileImageUrl?: string
+  specializations?: string[]
+  averageRating?: number
+  reviewCount?: number
+  minPrice?: number
+}
+
+interface ClientDashboard {
+  upcomingBookings?: BookingResponse[]
+  recentReports?: ReportSummary[]
+  recommendedCounselors?: PublicProfileResponse[]
+  unreadNotificationCount?: number
+}
+
+interface ApiResponse<T> {
+  success?: boolean
+  data?: T
+}
+
+function formatReportDate(createdAt?: string) {
+  if (!createdAt) return '-'
+  return new Date(createdAt).toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+}
+
+function formatBookingDateTime(booking?: BookingResponse) {
+  if (!booking?.bookedDate) return '-'
+  const date = new Date(`${booking.bookedDate}T00:00:00`)
+  const weekday = date.toLocaleDateString('ko-KR', { weekday: 'long' })
+  const datePart = new Date(`${booking.bookedDate}T00:00:00`).toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+  const time = booking.bookedStartTime ? booking.bookedStartTime.slice(0, 5) : ''
+  return `${datePart} ${weekday}${time ? ` ${time}` : ''}`
+}
 
 export default function DashboardPage() {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const name = user?.name ?? '사용자'
+  const [dashboard, setDashboard] = useState<ClientDashboard | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const today = new Date().toLocaleDateString('ko-KR', {
     year: 'numeric',
@@ -55,6 +81,35 @@ export default function DashboardPage() {
     day: 'numeric',
     weekday: 'long',
   })
+
+  useEffect(() => {
+    const run = async () => {
+      setLoading(true)
+      try {
+        const res = await springFetch('/api/v1/dashboard/client')
+        if (!res.ok) throw new Error('dashboard failed')
+        const payload: ApiResponse<ClientDashboard> = await res.json()
+        setDashboard(payload?.data ?? null)
+        setError(null)
+      } catch {
+        setError('대시보드 정보를 불러오지 못했어요.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    void run()
+  }, [])
+
+  const latestReport = useMemo(
+    () => dashboard?.recentReports?.[0] ?? null,
+    [dashboard?.recentReports],
+  )
+  const nextBooking = useMemo(
+    () => dashboard?.upcomingBookings?.[0] ?? null,
+    [dashboard?.upcomingBookings],
+  )
+  const counselors = dashboard?.recommendedCounselors ?? []
+  const unread = dashboard?.unreadNotificationCount ?? 0
 
   return (
     <div className="px-5 py-5 flex flex-col gap-6">
@@ -64,7 +119,12 @@ export default function DashboardPage() {
           안녕하세요, {name}님
         </h2>
         <p className="text-caption text-neutral-400 mt-0.5">{today}</p>
+        {unread > 0 && (
+          <p className="text-caption text-primary-700 mt-1">읽지 않은 알림 {unread}개</p>
+        )}
       </div>
+      {loading && <p className="text-caption text-neutral-400">불러오는 중...</p>}
+      {error && <p className="text-caption text-semantic-error-text">{error}</p>}
 
       {/* Chatbot CTA */}
       <button
@@ -83,33 +143,46 @@ export default function DashboardPage() {
       {/* Recent Report */}
       <div>
         <Divider />
-        <div className="pt-4 flex items-center justify-between">
-          <span className="text-body-md text-neutral-600">
-            최근 리포트 · {MOCK_REPORT.date}
-          </span>
-          <button
-            type="button"
-            onClick={() => navigate(`/report/${MOCK_REPORT.id}`)}
-            className="text-body-md text-primary-600"
-          >
-            리포트 보기
-          </button>
+        <div className="pt-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <span className="text-body-md text-neutral-600">
+              {latestReport ? `최근 리포트 · ${formatReportDate(latestReport.createdAt)}` : '최근 리포트가 없어요'}
+            </span>
+            {latestReport && (
+              <button
+                type="button"
+                onClick={() => navigate(`/report/${latestReport.reportId}`)}
+                className="text-body-md text-primary-600"
+              >
+                리포트 보기
+              </button>
+            )}
+          </div>
+          <AttachedReportCard
+            title="최근 리포트 요약"
+            attached={!!latestReport}
+            showStatus={false}
+            createdAt={latestReport?.createdAt}
+            depressionScore={latestReport?.depressionScore}
+            anxietyScore={latestReport?.anxietyScore}
+            stressScore={latestReport?.stressScore}
+          />
         </div>
       </div>
 
       {/* Next Booking */}
-      <div>
-        <Divider />
-        <div className="pt-4">
-          {MOCK_BOOKING ? (
+      {nextBooking && (
+        <div>
+          <Divider />
+          <div className="pt-4">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="text-caption text-neutral-400 mb-0.5">다음 예약</p>
                 <p className="text-body-md font-medium text-neutral-900">
-                  {MOCK_BOOKING.dateTime}
+                  {formatBookingDateTime(nextBooking)}
                 </p>
                 <p className="text-body-md text-neutral-600">
-                  {MOCK_BOOKING.counselorName}
+                  {nextBooking.counselorName} 상담사
                 </p>
               </div>
               <button
@@ -120,32 +193,34 @@ export default function DashboardPage() {
                 예약 상세
               </button>
             </div>
-          ) : (
-            <p className="text-caption text-neutral-400">예약된 상담이 없어요</p>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Recommended Counselors */}
       <div>
         <Divider />
         <div className="pt-4">
           <h3 className="text-[16px] font-bold text-neutral-900 mb-3">추천 상담사</h3>
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-5 px-5 no-scrollbar">
-            {MOCK_COUNSELORS.map((c) => (
-              <CounselorCard
-                key={c.id}
-                name={c.name}
-                specialties={c.specialties}
-                rating={c.rating}
-                reviewCount={c.reviewCount}
-                price={c.price}
-                avatarUrl={c.avatarUrl}
-                onBook={() => navigate(`/counselors/${c.id}`)}
-                className="shrink-0"
-              />
-            ))}
-          </div>
+          {counselors.length === 0 ? (
+            <p className="text-caption text-neutral-400">추천 상담사가 아직 없어요</p>
+          ) : (
+            <div className="flex gap-3 overflow-x-auto pb-2 -mx-5 px-5 no-scrollbar">
+              {counselors.map((c) => (
+                <CounselorCard
+                  key={c.userId}
+                  name={c.name}
+                  specialties={c.specializations ?? []}
+                  rating={c.averageRating}
+                  reviewCount={c.reviewCount}
+                  price={c.minPrice != null ? `${c.minPrice.toLocaleString()}원~` : undefined}
+                  avatarUrl={c.profileImageUrl}
+                  onBook={() => navigate(`/counselors/${c.userId}`)}
+                  className="shrink-0"
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

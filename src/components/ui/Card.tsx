@@ -116,12 +116,18 @@ const CounselorCard = forwardRef<HTMLDivElement, CounselorCardProps>(
   (
     { name, specialties, rating, reviewCount, price, avatarUrl, onBook, className, ...props },
     ref,
-  ) => (
-    <Card
-      ref={ref}
-      className={cn('w-[160px] flex flex-col overflow-hidden', className)}
-      {...props}
-    >
+  ) => {
+    const twoTagLength = (specialties[0]?.length ?? 0) + (specialties[1]?.length ?? 0)
+    const visibleCount = twoTagLength >= 8 ? 1 : 2
+    const visibleSpecialties = specialties.slice(0, visibleCount)
+    const hiddenCount = Math.max(0, specialties.length - visibleCount)
+
+    return (
+      <Card
+        ref={ref}
+        className={cn('w-[160px] flex flex-col overflow-hidden', className)}
+        {...props}
+      >
       {/* Top image area */}
       <div className="w-full h-24 bg-primary-50 overflow-hidden rounded-t-xl shrink-0">
         {avatarUrl ? (
@@ -141,12 +147,17 @@ const CounselorCard = forwardRef<HTMLDivElement, CounselorCardProps>(
       <div className="p-3 flex flex-col items-center gap-2">
         <span className="text-h4 font-medium text-neutral-900 text-center">{name}</span>
 
-        <div className="flex flex-wrap gap-1 justify-center">
-          {specialties.map((s) => (
-            <Badge key={s} variant="specialty">
+        <div className="flex flex-nowrap gap-1 justify-center overflow-hidden w-full">
+          {visibleSpecialties.map((s) => (
+            <Badge key={s} variant="specialty" className="shrink-0 max-w-[56px] truncate">
               {s}
             </Badge>
           ))}
+          {hiddenCount > 0 && (
+            <Badge variant="specialty" className="shrink-0">
+              +{hiddenCount}
+            </Badge>
+          )}
         </div>
 
         {rating != null && (
@@ -182,7 +193,8 @@ const CounselorCard = forwardRef<HTMLDivElement, CounselorCardProps>(
         </Button>
       </div>
     </Card>
-  ),
+    )
+  },
 )
 CounselorCard.displayName = 'CounselorCard'
 
