@@ -4,9 +4,9 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Divider } from '@/components/common/Divider'
-import { LabelBadge } from '@/components/common/LabelBadge'
 import { DatePicker } from '@/components/booking/DatePicker'
 import { TimeSlotPicker } from '@/components/booking/TimeSlotPicker'
+import { AttachedReportCard } from '@/components/report/AttachedReportCard'
 import { springFetch } from '@/lib/springApi'
 
 type BookingStep = 'select' | 'confirm'
@@ -397,45 +397,16 @@ export default function BookingPage() {
             <p className="text-caption text-neutral-600 mt-2">
               더 나은 상담 준비를 위해, 리포트 요약이 상담사에게 함께 전달됩니다.
             </p>
-            <div className="border border-neutral-100 rounded-xl p-4 flex flex-col gap-2 mt-1 bg-neutral-50">
-              <div className="flex items-center justify-between">
-                <span className="text-body-md font-medium text-neutral-900">나의 리포트</span>
-                {loadingReport ? (
-                  <LabelBadge>확인 중...</LabelBadge>
-                ) : attachedReport?.reportId ? (
-                  <LabelBadge>첨부됨</LabelBadge>
-                ) : (
-                  <span className="text-caption text-semantic-error-text">첨부 필요</span>
-                )}
-              </div>
-              {!loadingReport && attachedReportDetail && (
-                <div className="flex flex-col gap-2">
-                  {[
-                    { label: '우울', value: attachedReportDetail.depressionScore ?? 0, barClass: 'bg-semantic-info-text' },
-                    { label: '불안', value: attachedReportDetail.anxietyScore ?? 0, barClass: 'bg-accent-800' },
-                    { label: '스트레스', value: attachedReportDetail.stressScore ?? 0, barClass: 'bg-semantic-error-text' },
-                  ].map((item) => (
-                    <div key={item.label} className="flex flex-col gap-1">
-                      <div className="flex items-center justify-between text-small text-neutral-700">
-                        <span>{item.label}</span>
-                        <span>{item.value}</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-neutral-200 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${item.barClass}`}
-                          style={{ width: `${Math.max(0, Math.min(100, item.value))}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {!loadingReport && attachedReport?.createdAt && (
-                <p className="text-small text-neutral-400">
-                  생성일 {new Date(attachedReport.createdAt).toLocaleDateString('ko-KR')}
-                </p>
-              )}
-            </div>
+            <AttachedReportCard
+              title="나의 리포트"
+              required
+              loading={loadingReport}
+              attached={!!attachedReport?.reportId}
+              createdAt={attachedReport?.createdAt}
+              depressionScore={attachedReportDetail?.depressionScore}
+              anxietyScore={attachedReportDetail?.anxietyScore}
+              stressScore={attachedReportDetail?.stressScore}
+            />
           </div>
         )}
       </div>
