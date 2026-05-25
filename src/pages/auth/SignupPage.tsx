@@ -91,7 +91,10 @@ export default function SignupPage() {
 
       const payload = await res.json()
       const onboardingCompleted = payload?.data?.onboardingCompleted === true
-      navigate(onboardingCompleted ? '/dashboard' : '/chat', { replace: true })
+      navigate('/signup-complete', {
+        replace: true,
+        state: { nextPath: onboardingCompleted ? '/dashboard' : '/chat' },
+      })
     } catch {
       setSubmitError('추가 정보 저장에 실패했어요. 잠시 후 다시 시도해 주세요.')
     } finally {

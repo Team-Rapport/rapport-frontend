@@ -7,11 +7,22 @@ export default function PublicRoute() {
   const location = useLocation()
 
   const isOAuthCallbackPath = location.pathname === '/oauth2/callback'
-  const allowLoggedInPath =
-    location.pathname === '/signup' &&
+
+  const allowClientSignupPath =
+    (location.pathname === '/signup' || location.pathname === '/signup-complete') &&
     user?.role === 'CLIENT'
 
-  if (isLoggedIn && !allowLoggedInPath && !isOAuthCallbackPath) {
+  const allowCounselorOnboardingPath =
+    user?.role === 'COUNSELOR' &&
+    (
+      location.pathname === '/counselor-signup' ||
+      location.pathname === '/signup/counselor' ||
+      location.pathname === '/counselor-signup-complete' ||
+      location.pathname === '/counselor-login' ||
+      location.pathname === '/login/counselor'
+    )
+
+  if (isLoggedIn && !allowClientSignupPath && !allowCounselorOnboardingPath && !isOAuthCallbackPath) {
     return <Navigate to={user?.role === 'COUNSELOR' ? '/counselor/dashboard' : '/dashboard'} replace />
   }
 
