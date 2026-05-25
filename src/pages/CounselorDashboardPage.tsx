@@ -55,13 +55,29 @@ export default function CounselorDashboardPage() {
       <div className="max-w-[1200px] mx-auto flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-neutral-900">상담사 대시보드</h1>
-          <button
-            type="button"
-            onClick={() => navigate('/counselor-profile')}
-            className="h-10 px-4 rounded-lg border border-neutral-200 bg-white text-sm text-neutral-700"
-          >
-            프로필 수정
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate('/mypage')}
+              className="h-10 px-4 rounded-lg border border-neutral-200 bg-white text-sm text-neutral-700"
+            >
+              마이페이지
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/counselor/bookings')}
+              className="h-10 px-4 rounded-lg border border-neutral-200 bg-white text-sm text-neutral-700"
+            >
+              예약 요청
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/counselor-profile')}
+              className="h-10 px-4 rounded-lg border border-neutral-200 bg-white text-sm text-neutral-700"
+            >
+              프로필 수정
+            </button>
+          </div>
         </div>
 
         {loading && <p className="text-sm text-neutral-500">불러오는 중...</p>}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Check } from 'lucide-react'
 import logo from '@/assets/logo.svg'
 import { springFetch } from '@/lib/springApi'
+import { useAuthStore } from '@/store/authStore'
 
 type StepStatus = 'done' | 'active' | 'upcoming'
 
@@ -70,6 +71,7 @@ function StepIndicator({ steps }: { steps: Step[] }) {
 
 export default function CounselorPendingPage() {
   const navigate = useNavigate()
+  const clearAuth = useAuthStore((s) => s.clearAuth)
   const [status, setStatus] = useState<'PENDING' | 'APPROVED' | 'REJECTED' | null>(null)
   const [rejectionReason, setRejectionReason] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -109,9 +111,14 @@ export default function CounselorPendingPage() {
     }
   }
 
+  function handleBackToLogin() {
+    clearAuth()
+    navigate('/counselor-login', { replace: true })
+  }
+
   return (
-    <div className="min-h-screen bg-white px-6 md:px-10 lg:px-16">
-      <div className="mx-auto w-full max-w-[960px] flex flex-col min-h-screen">
+    <div className="min-h-screen bg-white flex justify-center">
+      <div className="w-full max-w-[402px] px-6 flex flex-col min-h-screen">
       {/* 상단 로고 영역 */}
       <div className="flex flex-col items-center pt-[80px]">
         <img
@@ -189,7 +196,7 @@ export default function CounselorPendingPage() {
       <div className="flex justify-center mt-auto pb-[48px] pt-[32px]">
         <button
           type="button"
-          onClick={() => navigate('/counselor-login')}
+          onClick={handleBackToLogin}
           className="text-[13px] text-neutral-400 hover:underline"
         >
           로그인 화면으로 돌아가기

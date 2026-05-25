@@ -42,6 +42,17 @@ function isEntryValid(e: CredentialEntry) {
   return e.type !== '' && e.name.trim().length > 0 && e.file !== null && !e.fileError
 }
 
+async function readErrorMessage(res: Response): Promise<string> {
+  const fallback = `업로드 실패 (${res.status})`
+  try {
+    const payload = await res.json()
+    const message = payload?.message ?? payload?.error ?? payload?.data?.message
+    return typeof message === 'string' && message.trim().length > 0 ? message : fallback
+  } catch {
+    return fallback
+  }
+}
+
 // 자격 종류 드롭다운
 function TypeSelect({
   value,
@@ -242,63 +253,68 @@ export default function CounselorCredentialPage() {
           method: 'POST',
           body: form,
         })
-        if (!res.ok) throw new Error('upload failed')
+        if (!res.ok) {
+          const serverMessage = await readErrorMessage(res)
+          throw new Error(serverMessage)
+        }
       }
       navigate('/counselor-credential-complete')
-    } catch {
-      setSubmitError('자격 증명 제출에 실패했어요. 다시 시도해 주세요.')
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : '자격 증명 제출에 실패했어요. 다시 시도해 주세요.')
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-white">
-      <div className="px-[16px] pt-[8px]">
-        <TopNavBar title="자격 증명" onBack={() => navigate(-1)} />
-      </div>
-
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col flex-1 pb-[120px]">
-        <div className="flex flex-col mt-[20px]">
-          {entries.map((entry, i) => (
-            <CredentialSection
-              key={entry.id}
-              entry={entry}
-              showDivider={i < entries.length - 1}
-              removable={i > 0}
-              onRemove={() => setEntries((prev) => prev.filter((e) => e.id !== entry.id))}
-              onChange={(patch) => updateEntry(entry.id, patch)}
-            />
-          ))}
-
-          {/* 구분선 */}
-          <div className="h-[4px] bg-neutral-100 w-full" />
-
-          {/* 추가 버튼 */}
-          <div className="flex justify-center py-[20px]">
-            <button
-              type="button"
-              onClick={addEntry}
-              className="flex items-center justify-center px-[16px] h-[36px] bg-white border border-neutral-200 rounded-[8px] text-[14px] font-medium text-neutral-600 hover:bg-neutral-50 transition-colors"
-            >
-              추가
-            </button>
-          </div>
+    <div className="min-h-screen bg-white flex justify-center">
+      <div className="flex flex-col w-full max-w-[402px] min-h-screen">
+        <div className="px-[16px] pt-[8px]">
+          <TopNavBar title="자격 증명" onBack={() => navigate(-1)} />
         </div>
-        {submitError && <p className="px-[29px] text-caption text-semantic-error-text">{submitError}</p>}
-      </form>
 
-      {/* 하단 고정 완료 버튼 */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[402px] px-[19px] pb-[34px] pt-[12px] bg-white">
-        <Button
-          type="submit"
-          size="lg"
-          className="w-full"
-          disabled={!isValid || submitting}
-          onClick={handleSubmit}
-        >
-          {submitting ? '제출 중...' : '완료'}
-        </Button>
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col flex-1 pb-[120px]">
+          <div className="flex flex-col mt-[20px]">
+            {entries.map((entry, i) => (
+              <CredentialSection
+                key={entry.id}
+                entry={entry}
+                showDivider={i < entries.length - 1}
+                removable={i > 0}
+                onRemove={() => setEntries((prev) => prev.filter((e) => e.id !== entry.id))}
+                onChange={(patch) => updateEntry(entry.id, patch)}
+              />
+            ))}
+
+            {/* 구분선 */}
+            <div className="h-[4px] bg-neutral-100 w-full" />
+
+            {/* 추가 버튼 */}
+            <div className="flex justify-center py-[20px]">
+              <button
+                type="button"
+                onClick={addEntry}
+                className="flex items-center justify-center px-[16px] h-[36px] bg-white border border-neutral-200 rounded-[8px] text-[14px] font-medium text-neutral-600 hover:bg-neutral-50 transition-colors"
+              >
+                추가
+              </button>
+            </div>
+          </div>
+          {submitError && <p className="px-[29px] text-caption text-semantic-error-text">{submitError}</p>}
+        </form>
+
+        {/* 하단 고정 완료 버튼 */}
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[402px] px-[19px] pb-[34px] pt-[12px] bg-white">
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full"
+            disabled={!isValid || submitting}
+            onClick={handleSubmit}
+          >
+            {submitting ? '제출 중...' : '완료'}
+          </Button>
+        </div>
       </div>
     </div>
   )

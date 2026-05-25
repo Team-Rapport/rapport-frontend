@@ -80,7 +80,7 @@ export default function LoginPage() {
 
       <button
         type="button"
-        onClick={() => navigate('/signup/counselor')}
+        onClick={() => navigate('/counselor-login')}
         className="mt-[104px] flex items-center gap-1 text-[13px] leading-[19.5px] text-primary-800 hover:underline"
       >
         <span>상담사이신가요?</span>

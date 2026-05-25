@@ -126,6 +126,9 @@ export default function CounselorSignupPage() {
         if (code === 'EMAIL_VERIFICATION_INVALID') {
           throw new Error('인증 코드가 올바르지 않아요.')
         }
+        if (code === 'EMAIL_NOT_VERIFIED') {
+          throw new Error('이메일 인증이 완료되지 않았어요. 인증 코드를 다시 확인해 주세요.')
+        }
         throw new Error('verify failed')
       }
       setCodeVerified(true)
@@ -164,6 +167,9 @@ export default function CounselorSignupPage() {
         }
         if (code === 'EMAIL_NOT_VERIFIED') {
           throw new Error('이메일 인증이 완료되지 않았어요.')
+        }
+        if (code === 'EMAIL_VERIFICATION_INVALID') {
+          throw new Error('인증 코드가 올바르지 않아요. 인증을 다시 진행해 주세요.')
         }
         throw new Error('signup failed')
       }

@@ -7,8 +7,10 @@ interface ApiResponse<T> {
   data?: T
 }
 
-interface CounselorStatusResponse {
+interface AuthMeResponse {
+  role?: 'CLIENT' | 'COUNSELOR'
   approvalStatus?: CounselorApprovalStatus
+  credentialsSubmitted?: boolean
 }
 
 interface CounselorProfileResponse {
@@ -18,17 +20,34 @@ interface CounselorProfileResponse {
 }
 
 export async function routeCounselorAfterLogin(navigate: (path: string, opts?: { replace?: boolean }) => void) {
-  const statusRes = await springFetch('/api/v1/counselor/status')
-  if (!statusRes.ok) {
+  const meRes = await springFetch('/api/v1/auth/me')
+  if (!meRes.ok) {
+    navigate('/counselor-login', { replace: true })
+    return
+  }
+
+  const mePayload: ApiResponse<AuthMeResponse> = await meRes.json().catch(() => ({}))
+  const me = mePayload?.data
+  const status = me?.approvalStatus
+  const credentialsSubmitted = me?.credentialsSubmitted === true
+
+  if (me?.role !== 'COUNSELOR') {
+    navigate('/dashboard', { replace: true })
+    return
+  }
+
+  if (!credentialsSubmitted) {
+    navigate('/counselor-credential', { replace: true })
+    return
+  }
+
+  if (status === 'PENDING') {
     navigate('/counselor-pending', { replace: true })
     return
   }
 
-  const statusPayload: ApiResponse<CounselorStatusResponse> = await statusRes.json().catch(() => ({}))
-  const status = statusPayload?.data?.approvalStatus
-
-  if (status === 'PENDING' || status === 'REJECTED') {
-    navigate('/counselor-pending', { replace: true })
+  if (status === 'REJECTED') {
+    navigate('/counselor-credential', { replace: true })
     return
   }
 
