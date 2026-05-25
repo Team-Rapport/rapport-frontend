@@ -12,7 +12,7 @@ interface CounselorDetail {
   bio?: string
   specializations?: string[]
   approaches?: string[]
-  consultationModes?: Array<'ONLINE' | 'FACE_TO_FACE' | string>
+  consultationModes?: Array<'CALL' | 'MEETING' | 'ONLINE' | 'FACE_TO_FACE' | string>
   minPrice?: number
   profileImageUrl?: string
   licenseType?: string
@@ -102,8 +102,8 @@ export default function CounselorDetailPage() {
 
   const modeLabels = useMemo(() => {
     return (counselor?.consultationModes ?? []).map((mode) => {
-      if (mode === 'ONLINE') return '비대면'
-      if (mode === 'FACE_TO_FACE') return '대면'
+      if (mode === 'CALL' || mode === 'ONLINE') return '비대면(전화)'
+      if (mode === 'MEETING' || mode === 'FACE_TO_FACE') return '대면'
       return mode
     })
   }, [counselor?.consultationModes])

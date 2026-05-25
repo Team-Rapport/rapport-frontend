@@ -1,66 +1,78 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/Badge'
+import { springFetch } from '@/lib/springApi'
 
 type SessionTab = 'upcoming' | 'completed'
 
-interface Session {
-  id: string
+interface BookingItem {
+  bookingId: number
   counselorName: string
-  dateTime: string
-  status: '확정' | '예정' | '취소'
-  isCompleted: boolean
-  hasReview?: boolean
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED' | string
+  bookedDate?: string
+  bookedStartTime?: string
 }
 
-const MOCK_SESSIONS: Session[] = [
-  {
-    id: 's001',
-    counselorName: '김수연',
-    dateTime: '2025.06.10 화 14:00',
-    status: '확정',
-    isCompleted: false,
-  },
-  {
-    id: 's002',
-    counselorName: '박지훈',
-    dateTime: '2025.06.17 화 15:00',
-    status: '예정',
-    isCompleted: false,
-  },
-  {
-    id: 's003',
-    counselorName: '이미래',
-    dateTime: '2025.06.24 화 13:00',
-    status: '예정',
-    isCompleted: false,
-  },
-  {
-    id: 's004',
-    counselorName: '김수연',
-    dateTime: '2025.05.13 화 14:00',
-    status: '확정',
-    isCompleted: true,
-    hasReview: true,
-  },
-  {
-    id: 's005',
-    counselorName: '박지훈',
-    dateTime: '2025.05.06 화 15:00',
-    status: '확정',
-    isCompleted: true,
-    hasReview: false,
-  },
-]
+interface ApiResponse<T> {
+  success?: boolean
+  data?: T
+}
+
+interface PageResponse<T> {
+  content?: T[]
+}
+
+function mapStatusToBadge(status: BookingItem['status']): '확정' | '예정' | '취소' | '대기' {
+  if (status === 'ACCEPTED') return '확정'
+  if (status === 'PENDING') return '대기'
+  if (status === 'REJECTED' || status === 'CANCELLED') return '취소'
+  if (status === 'COMPLETED') return '확정'
+  return '예정'
+}
+
+function formatBookingDateTime(bookedDate?: string, bookedStartTime?: string) {
+  if (!bookedDate) return '-'
+  const date = new Date(`${bookedDate}T00:00:00`)
+  const weekday = date.toLocaleDateString('ko-KR', { weekday: 'short' })
+  const [year, month, day] = bookedDate.split('-')
+  const datePart = `${year}.${month}.${day} ${weekday}`
+  if (!bookedStartTime) return datePart
+  return `${datePart} ${bookedStartTime.slice(0, 5)}`
+}
 
 export default function MySessionsPage() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<SessionTab>('upcoming')
+  const [bookings, setBookings] = useState<BookingItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const filtered = MOCK_SESSIONS.filter((s) =>
-    activeTab === 'upcoming' ? !s.isCompleted : s.isCompleted,
-  )
+  useEffect(() => {
+    const run = async () => {
+      setLoading(true)
+      try {
+        const res = await springFetch('/api/v1/my/bookings?page=0&size=50')
+        if (!res.ok) throw new Error('fetch failed')
+        const payload: ApiResponse<PageResponse<BookingItem>> = await res.json()
+        setBookings(payload?.data?.content ?? [])
+        setError(null)
+      } catch {
+        setError('내 상담 목록을 불러오지 못했어요.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    void run()
+  }, [])
+
+  const filtered = useMemo(() => {
+    return bookings.filter((b) =>
+      activeTab === 'upcoming'
+        ? b.status !== 'COMPLETED'
+        : b.status === 'COMPLETED',
+    )
+  }, [bookings, activeTab])
 
   return (
     <div className="flex flex-col">
@@ -90,7 +102,11 @@ export default function MySessionsPage() {
 
       {/* Session list */}
       <div className="flex flex-col">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <p className="text-center text-caption text-neutral-400 py-12">불러오는 중...</p>
+        ) : error ? (
+          <p className="text-center text-caption text-semantic-error-text py-12">{error}</p>
+        ) : filtered.length === 0 ? (
           <p className="text-center text-caption text-neutral-400 py-12">
             {activeTab === 'upcoming'
               ? '예정된 상담이 없어요'
@@ -99,27 +115,27 @@ export default function MySessionsPage() {
         ) : (
           filtered.map((session) => (
             <div
-              key={session.id}
+              key={session.bookingId}
               className="px-5 py-4 border-b border-neutral-100"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-col gap-1">
                   <span className="text-body-md font-bold text-neutral-900">
-                    {session.dateTime}
+                    {formatBookingDateTime(session.bookedDate, session.bookedStartTime)}
                   </span>
                   <span className="text-[16px] font-medium text-neutral-900">
                     {session.counselorName} 상담사
                   </span>
                 </div>
-                <Badge variant="status" status={session.status}>
-                  {session.status}
+                <Badge variant="status" status={mapStatusToBadge(session.status)}>
+                  {mapStatusToBadge(session.status)}
                 </Badge>
               </div>
-              {session.isCompleted && !session.hasReview && (
+              {session.status === 'COMPLETED' && (
                 <button
                   type="button"
                   className="mt-2 text-body-md text-primary-600"
-                  onClick={() => navigate(`/review/${session.id}`)}
+                  onClick={() => navigate(`/review/${session.bookingId}`)}
                 >
                   리뷰 작성
                 </button>

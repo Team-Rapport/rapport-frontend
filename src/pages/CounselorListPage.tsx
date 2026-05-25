@@ -11,7 +11,7 @@ interface PublicProfileResponse {
   name: string
   profileImageUrl?: string
   specializations?: string[]
-  consultationModes?: Array<'ONLINE' | 'FACE_TO_FACE' | string>
+  consultationModes?: Array<'CALL' | 'MEETING' | 'ONLINE' | 'FACE_TO_FACE' | string>
   minPrice?: number
   averageRating?: number
   reviewCount?: number
@@ -66,8 +66,8 @@ export default function CounselorListPage() {
   }, [])
 
   const modeToLabel = (mode: string) => {
-    if (mode === 'ONLINE') return '비대면'
-    if (mode === 'FACE_TO_FACE') return '대면'
+    if (mode === 'CALL' || mode === 'ONLINE') return '비대면(전화)'
+    if (mode === 'MEETING' || mode === 'FACE_TO_FACE') return '대면'
     return mode
   }
 
