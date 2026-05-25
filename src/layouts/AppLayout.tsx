@@ -22,7 +22,7 @@ export default function AppLayout() {
     <div className="min-h-screen bg-neutral-50 flex justify-center">
       <div className="w-full max-w-[402px] min-h-screen flex flex-col bg-white relative">
         {/* 헤더 */}
-        <header className="sticky top-0 z-50 h-14 bg-white border-b border-neutral-100 flex items-center justify-between px-4">
+        <header className="sticky top-0 z-50 h-14 bg-white flex items-center justify-between px-4">
           <div className="flex items-center gap-1">
             <img src={logo} alt="rapport 로고" className="w-8 h-8 object-contain" />
             <span
@@ -36,7 +36,6 @@ export default function AppLayout() {
             <button type="button" className="text-neutral-600 hover:text-neutral-900" aria-label="알림">
               <Bell size={22} />
             </button>
-            <div className="w-8 h-8 rounded-full bg-neutral-200" aria-label="프로필" />
           </div>
         </header>
 
@@ -47,7 +46,7 @@ export default function AppLayout() {
 
         {/* 하단 네비게이션 */}
         {!hideBottomNav && (
-          <nav className="sticky bottom-0 z-50 h-16 bg-white border-t border-neutral-100 flex">
+          <nav className="sticky bottom-0 z-50 h-16 bg-white flex">
             {NAV_ITEMS.map(({ label, icon: Icon, path }) => {
               const isActive =
                 location.pathname === path || location.pathname.startsWith(path + '/')

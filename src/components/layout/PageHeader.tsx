@@ -9,7 +9,7 @@ interface PageHeaderProps {
 export function PageHeader({ title, onBack }: PageHeaderProps) {
   const navigate = useNavigate()
   return (
-    <div className="px-5 border-b border-[#E8EBE8] bg-white">
+    <div className="px-5 bg-white">
       <TopNavBar title={title} onBack={onBack ?? (() => navigate(-1))} />
     </div>
   )
