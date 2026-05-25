@@ -28,6 +28,8 @@ import MyPage from '@/pages/MyPage'
 import IntakeFormPage from '@/pages/IntakeFormPage'
 import MySessionsPage from '@/pages/MySessionsPage'
 import ReviewPage from '@/pages/ReviewPage'
+import MyReportsPage from '@/pages/MyReportsPage'
+import EditProfilePage from '@/pages/EditProfilePage'
 
 function RootRedirect() {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
@@ -75,6 +77,8 @@ export const router = createBrowserRouter([
           { path: '/counselors/:id', element: <CounselorDetailPage /> },
           { path: '/booking/:counselorId', element: <BookingPage /> },
           { path: '/mypage', element: <MyPage /> },
+          { path: '/mypage/profile', element: <EditProfilePage /> },
+          { path: '/my/reports', element: <MyReportsPage /> },
           { path: '/intake-form', element: <IntakeFormPage /> },
           { path: '/sessions', element: <MySessionsPage /> },
           { path: '/review/:sessionId', element: <ReviewPage /> },

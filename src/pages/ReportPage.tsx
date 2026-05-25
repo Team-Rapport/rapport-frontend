@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { EmotionScoreCard } from '@/components/report/EmotionScoreCard'
 import { CounselorRecommendCard } from '@/components/report/CounselorRecommendCard'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { useAuthStore } from '@/store/authStore'
 
 const FALLBACK_EMOTIONS = [
@@ -77,8 +78,10 @@ function getRationale(scoreBasis: ReportDetail['scoreBasis'], key: 'depression' 
 
 export default function ReportPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { reportId } = useParams<{ reportId: string }>()
   const accessToken = useAuthStore((s) => s.accessToken)
+  const fromMyReports = location.state != null && (location.state as { fromMyReports?: boolean }).fromMyReports === true
   const [report, setReport] = useState<ReportDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -159,6 +162,7 @@ export default function ReportPage() {
 
   return (
     <div className="min-h-full bg-neutral-50 pb-10">
+      {fromMyReports && <PageHeader title="리포트 상세" />}
       <div className="px-5 pt-4">
         <div className="rounded-sm border border-primary-200 bg-primary-50 px-4 py-4">
           <p className="text-h4-mobile font-bold text-neutral-900">오늘 대화를 마쳤어요</p>
@@ -205,11 +209,13 @@ export default function ReportPage() {
         </div>
       </section>
 
-      <div className="px-5 mt-8">
-        <Button size="lg" className="w-full rounded-sm" onClick={() => navigate('/dashboard')}>
-          상담사 둘러보기
-        </Button>
-      </div>
+      {!fromMyReports && (
+        <div className="px-5 mt-8">
+          <Button size="lg" className="w-full rounded-sm" onClick={() => navigate('/dashboard')}>
+            상담사 둘러보기
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
