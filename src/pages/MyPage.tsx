@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
+import { Modal } from '@/components/ui/Modal'
 import { Divider } from '@/components/common/Divider'
 import { springFetch } from '@/lib/springApi'
 import { useAuthStore } from '@/store/authStore'
@@ -34,6 +35,10 @@ export default function MyPage() {
   const [stats, setStats] = useState<MyStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [loggingOut, setLoggingOut] = useState(false)
+  const [withdrawOpen, setWithdrawOpen] = useState(false)
+  const [withdrawPassword, setWithdrawPassword] = useState('')
+  const [withdrawing, setWithdrawing] = useState(false)
+  const [withdrawError, setWithdrawError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -78,6 +83,34 @@ export default function MyPage() {
       clearAuth()
       navigate('/login', { replace: true })
       setLoggingOut(false)
+    }
+  }
+
+  async function handleWithdraw() {
+    if (withdrawing) return
+    setWithdrawing(true)
+    setWithdrawError(null)
+    try {
+      const body = withdrawPassword.trim().length > 0
+        ? JSON.stringify({ password: withdrawPassword })
+        : JSON.stringify({})
+
+      const res = await springFetch('/api/v1/users/me', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body,
+      })
+
+      if (!res.ok) {
+        throw new Error('withdraw failed')
+      }
+
+      clearAuth()
+      navigate('/login', { replace: true })
+    } catch {
+      setWithdrawError('회원탈퇴에 실패했어요. 비밀번호를 확인하거나 잠시 후 다시 시도해 주세요.')
+    } finally {
+      setWithdrawing(false)
     }
   }
 
@@ -146,6 +179,51 @@ export default function MyPage() {
       >
         {loggingOut ? '로그아웃 중...' : '로그아웃'}
       </Button>
+
+      <button
+        type="button"
+        onClick={() => {
+          setWithdrawOpen(true)
+          setWithdrawPassword('')
+          setWithdrawError(null)
+        }}
+        className="w-full text-center text-sm text-semantic-error-text hover:underline"
+      >
+        회원탈퇴
+      </button>
+
+      <Modal
+        open={withdrawOpen}
+        onClose={() => {
+          if (withdrawing) return
+          setWithdrawOpen(false)
+        }}
+        title="회원탈퇴"
+        primaryLabel="탈퇴하기"
+        secondaryLabel="취소"
+        onPrimary={() => void handleWithdraw()}
+        onSecondary={() => setWithdrawOpen(false)}
+        loading={withdrawing}
+      >
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-neutral-700">
+            탈퇴 시 계정 정보는 익명 처리되며 되돌릴 수 없어요.
+          </p>
+          <p className="text-xs text-neutral-500">
+            이메일 로그인 계정은 비밀번호 입력이 필요해요. 소셜 로그인 계정은 비워두고 진행할 수 있어요.
+          </p>
+          <input
+            type="password"
+            placeholder="비밀번호 (이메일 계정만 입력)"
+            value={withdrawPassword}
+            onChange={(e) => setWithdrawPassword(e.target.value)}
+            className="w-full h-11 rounded-[8px] border border-neutral-200 px-3 text-sm focus:outline-none focus:border-primary-400"
+          />
+          {withdrawError && (
+            <p className="text-caption text-semantic-error-text">{withdrawError}</p>
+          )}
+        </div>
+      </Modal>
     </div>
   )
 }
