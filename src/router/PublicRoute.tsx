@@ -12,7 +12,7 @@ export default function PublicRoute() {
     user?.role === 'CLIENT'
 
   if (isLoggedIn && !allowLoggedInPath && !isOAuthCallbackPath) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to={user?.role === 'COUNSELOR' ? '/counselor/dashboard' : '/dashboard'} replace />
   }
 
   return <Outlet />

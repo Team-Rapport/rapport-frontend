@@ -1,6 +1,7 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Home, CalendarCheck, Users, User, Bell } from 'lucide-react'
 import logo from '@/assets/logo.svg'
+import { useAuthStore } from '@/store/authStore'
 
 const NAV_ITEMS = [
   { label: '홈', icon: Home, path: '/dashboard' },
@@ -12,15 +13,18 @@ const NAV_ITEMS = [
 export default function AppLayout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
+  const isCounselor = user?.role === 'COUNSELOR'
   const isChatPage =
     location.pathname === '/chat' || location.pathname.startsWith('/chat/')
   const isReportPage =
     location.pathname === '/report/latest' || location.pathname.startsWith('/report/')
-  const hideBottomNav = isChatPage || isReportPage
+
+  const hideBottomNav = isCounselor ? true : isChatPage || isReportPage
 
   return (
     <div className="min-h-screen bg-neutral-50 flex justify-center">
-      <div className="w-full max-w-[402px] min-h-screen flex flex-col bg-white relative">
+      <div className={`w-full ${isCounselor ? 'max-w-[1200px]' : 'max-w-[402px]'} min-h-screen flex flex-col bg-white relative`}>
         {/* 헤더 */}
         <header className="sticky top-0 z-50 h-14 bg-white flex items-center justify-between px-4">
           <div className="flex items-center gap-1">
@@ -40,7 +44,7 @@ export default function AppLayout() {
         </header>
 
         {/* 콘텐츠 */}
-        <main className={`flex-1 flex flex-col ${isChatPage ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+        <main className={`flex-1 flex flex-col ${isChatPage ? 'overflow-hidden' : 'overflow-y-auto'} ${isCounselor ? 'bg-neutral-50' : ''}`}>
           <Outlet />
         </main>
 

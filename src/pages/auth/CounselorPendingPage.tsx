@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Check } from 'lucide-react'
 import logo from '@/assets/logo.svg'
+import { springFetch } from '@/lib/springApi'
 
 type StepStatus = 'done' | 'active' | 'upcoming'
 
@@ -68,9 +70,48 @@ function StepIndicator({ steps }: { steps: Step[] }) {
 
 export default function CounselorPendingPage() {
   const navigate = useNavigate()
+  const [status, setStatus] = useState<'PENDING' | 'APPROVED' | 'REJECTED' | null>(null)
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [processing, setProcessing] = useState(false)
+
+  useEffect(() => {
+    const run = async () => {
+      setLoading(true)
+      try {
+        const res = await springFetch('/api/v1/counselor/status')
+        if (!res.ok) throw new Error('status failed')
+        const payload = await res.json()
+        setStatus(payload?.data?.approvalStatus ?? 'PENDING')
+        setRejectionReason(payload?.data?.rejectionReason ?? null)
+      } catch {
+        setStatus('PENDING')
+      } finally {
+        setLoading(false)
+      }
+    }
+    void run()
+  }, [])
+
+  const isApproved = status === 'APPROVED'
+  const isRejected = status === 'REJECTED'
+
+  async function handleReapply() {
+    setProcessing(true)
+    try {
+      const res = await springFetch('/api/v1/counselor/reapply', { method: 'POST' })
+      if (res.ok) {
+        setStatus('PENDING')
+        setRejectionReason(null)
+      }
+    } finally {
+      setProcessing(false)
+    }
+  }
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-white px-[36px]">
+    <div className="min-h-screen bg-white px-6 md:px-10 lg:px-16">
+      <div className="mx-auto w-full max-w-[960px] flex flex-col min-h-screen">
       {/* 상단 로고 영역 */}
       <div className="flex flex-col items-center pt-[80px]">
         <img
@@ -93,12 +134,56 @@ export default function CounselorPendingPage() {
 
       {/* 안내 카드 */}
       <div className="mt-[48px] bg-primary-50 rounded-[12px] px-[20px] py-[18px] flex flex-col gap-[6px]">
-        <p className="text-[14px] font-bold text-primary-900">서류를 검토하고 있어요</p>
-        <p className="text-[13px] text-primary-800 leading-[1.6]">
-          보통 2~3 영업일이 소요돼요.{'\n'}
-          심사가 완료되면 이메일로 알려드릴게요.
-        </p>
+        {loading ? (
+          <p className="text-[13px] text-primary-800">심사 상태를 확인하는 중이에요.</p>
+        ) : isApproved ? (
+          <>
+            <p className="text-[14px] font-bold text-primary-900">승인이 완료됐어요</p>
+            <p className="text-[13px] text-primary-800 leading-[1.6]">
+              프로필을 작성하면 상담사 대시보드로 이동할 수 있어요.
+            </p>
+          </>
+        ) : isRejected ? (
+          <>
+            <p className="text-[14px] font-bold text-primary-900">심사가 반려되었어요</p>
+            <p className="text-[13px] text-primary-800 leading-[1.6]">
+              {rejectionReason ? `사유: ${rejectionReason}` : '관리자 확인 후 다시 재신청해주세요.'}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-[14px] font-bold text-primary-900">서류를 검토하고 있어요</p>
+            <p className="text-[13px] text-primary-800 leading-[1.6]">
+              보통 2~3 영업일이 소요돼요.{'\n'}
+              심사가 완료되면 이메일로 알려드릴게요.
+            </p>
+          </>
+        )}
       </div>
+
+      {isApproved && (
+        <div className="flex justify-center mt-6">
+          <button
+            type="button"
+            onClick={() => navigate('/counselor-profile')}
+            className="h-11 px-5 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors"
+          >
+            프로필 작성하기
+          </button>
+        </div>
+      )}
+      {isRejected && (
+        <div className="flex justify-center mt-6">
+          <button
+            type="button"
+            onClick={() => void handleReapply()}
+            disabled={processing}
+            className="h-11 px-5 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 transition-colors disabled:opacity-60"
+          >
+            {processing ? '재신청 중...' : '재신청하기'}
+          </button>
+        </div>
+      )}
 
       {/* 하단 링크 */}
       <div className="flex justify-center mt-auto pb-[48px] pt-[32px]">
@@ -109,6 +194,7 @@ export default function CounselorPendingPage() {
         >
           로그인 화면으로 돌아가기
         </button>
+      </div>
       </div>
     </div>
   )

@@ -4,9 +4,16 @@ import { ChevronDown, X } from 'lucide-react'
 import { TopNavBar } from '@/components/ui/TopNavBar'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
+import { springFetch } from '@/lib/springApi'
 
 const CREDENTIAL_TYPES = ['학위', '자격증', '증명서', '기타'] as const
 type CredentialType = (typeof CREDENTIAL_TYPES)[number]
+const TYPE_TO_API: Record<CredentialType, 'DEGREE' | 'LICENSE' | 'CERT' | 'OTHER'> = {
+  학위: 'DEGREE',
+  자격증: 'LICENSE',
+  증명서: 'CERT',
+  기타: 'OTHER',
+}
 
 const ALLOWED_EXTENSIONS = ['pdf', 'jpeg', 'jpg', 'png']
 const MAX_FILE_SIZE_MB = 10
@@ -205,6 +212,8 @@ export default function CounselorCredentialPage() {
   const navigate = useNavigate()
   const [entries, setEntries] = useState<CredentialEntry[]>([createEntry(1)])
   const nextId = useRef(2)
+  const [submitError, setSubmitError] = useState<string | undefined>()
+  const [submitting, setSubmitting] = useState(false)
 
   const updateEntry = (id: number, patch: Partial<CredentialEntry>) => {
     setEntries((prev) =>
@@ -218,11 +227,29 @@ export default function CounselorCredentialPage() {
 
   const isValid = entries.some(isEntryValid)
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement> | React.MouseEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement> | React.MouseEvent) => {
     e.preventDefault()
-    if (!isValid) return
-    // TODO: API 연동 — 자격 증명 제출
-    navigate('/counselor-credential-complete')
+    if (!isValid || submitting) return
+    const validEntries = entries.filter(isEntryValid)
+    setSubmitting(true)
+    setSubmitError(undefined)
+    try {
+      for (const entry of validEntries) {
+        if (!entry.file || !entry.type) continue
+        const form = new FormData()
+        form.append('file', entry.file)
+        const res = await springFetch(`/api/v1/counselor/credentials?type=${TYPE_TO_API[entry.type]}`, {
+          method: 'POST',
+          body: form,
+        })
+        if (!res.ok) throw new Error('upload failed')
+      }
+      navigate('/counselor-credential-complete')
+    } catch {
+      setSubmitError('자격 증명 제출에 실패했어요. 다시 시도해 주세요.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -258,6 +285,7 @@ export default function CounselorCredentialPage() {
             </button>
           </div>
         </div>
+        {submitError && <p className="px-[29px] text-caption text-semantic-error-text">{submitError}</p>}
       </form>
 
       {/* 하단 고정 완료 버튼 */}
@@ -266,10 +294,10 @@ export default function CounselorCredentialPage() {
           type="submit"
           size="lg"
           className="w-full"
-          disabled={!isValid}
+          disabled={!isValid || submitting}
           onClick={handleSubmit}
         >
-          완료
+          {submitting ? '제출 중...' : '완료'}
         </Button>
       </div>
     </div>

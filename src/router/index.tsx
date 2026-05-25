@@ -30,10 +30,13 @@ import MySessionsPage from '@/pages/MySessionsPage'
 import ReviewPage from '@/pages/ReviewPage'
 import MyReportsPage from '@/pages/MyReportsPage'
 import EditProfilePage from '@/pages/EditProfilePage'
+import CounselorDashboardPage from '@/pages/CounselorDashboardPage'
 
 function RootRedirect() {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
-  return <Navigate to={isLoggedIn ? '/dashboard' : '/login'} replace />
+  const user = useAuthStore((s) => s.user)
+  if (!isLoggedIn) return <Navigate to="/login" replace />
+  return <Navigate to={user?.role === 'COUNSELOR' ? '/counselor/dashboard' : '/dashboard'} replace />
 }
 
 export const router = createBrowserRouter([
@@ -51,12 +54,10 @@ export const router = createBrowserRouter([
           { path: '/signup', element: <SignupPage /> },
           { path: '/signup-complete', element: <SignupCompletePage /> },
           { path: '/counselor-login', element: <CounselorLoginPage /> },
+          { path: '/login/counselor', element: <CounselorLoginPage /> },
           { path: '/counselor-signup', element: <CounselorSignupPage /> },
+          { path: '/signup/counselor', element: <CounselorSignupPage /> },
           { path: '/counselor-signup-complete', element: <CounselorSignupCompletePage /> },
-          { path: '/counselor-credential', element: <CounselorCredentialPage /> },
-          { path: '/counselor-credential-complete', element: <CounselorCredentialCompletePage /> },
-          { path: '/counselor-pending', element: <CounselorPendingPage /> },
-          { path: '/counselor-profile', element: <CounselorProfilePage /> },
           { path: '/forgot-password', element: <ForgotPasswordPage /> },
           { path: '/oauth2/callback', element: <OAuthCallbackPage /> },
         ],
@@ -66,6 +67,10 @@ export const router = createBrowserRouter([
   {
     element: <PrivateRoute />,
     children: [
+      { path: '/counselor-credential', element: <CounselorCredentialPage /> },
+      { path: '/counselor-credential-complete', element: <CounselorCredentialCompletePage /> },
+      { path: '/counselor-pending', element: <CounselorPendingPage /> },
+      { path: '/counselor-profile', element: <CounselorProfilePage /> },
       {
         element: <AppLayout />,
         children: [
@@ -82,6 +87,7 @@ export const router = createBrowserRouter([
           { path: '/intake-form', element: <IntakeFormPage /> },
           { path: '/sessions', element: <MySessionsPage /> },
           { path: '/review/:sessionId', element: <ReviewPage /> },
+          { path: '/counselor/dashboard', element: <CounselorDashboardPage /> },
         ],
       },
     ],

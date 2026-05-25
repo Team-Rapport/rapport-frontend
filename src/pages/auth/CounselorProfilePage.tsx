@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Camera } from 'lucide-react'
 import { TopNavBar } from '@/components/ui/TopNavBar'
 import { Button } from '@/components/ui/Button'
+import { springFetch } from '@/lib/springApi'
 
 type Gender = '여성' | '남성'
 type ConsultType = '오프라인' | '전화 상담'
@@ -81,6 +82,8 @@ export default function CounselorProfilePage() {
   const [consultTypes, setConsultTypes] = useState<ConsultType[]>([])
   const [situations, setSituations] = useState<Situation[]>([])
   const [symptoms, setSymptoms] = useState<Symptom[]>([])
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | undefined>()
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -96,10 +99,32 @@ export default function CounselorProfilePage() {
     situations.length > 0 &&
     symptoms.length > 0
 
-  const handleSubmit = () => {
-    if (!isValid) return
-    // TODO: API 연동 — 프로필 저장
-    navigate('/dashboard')
+  const handleSubmit = async () => {
+    if (!isValid || submitting) return
+    setSubmitting(true)
+    setSubmitError(undefined)
+    try {
+      if (profileImage) {
+        // profile image is optional in this onboarding, upload only when selected.
+      }
+      const payload = {
+        counselorGender: gender[0] === '여성' ? 'FEMALE' : 'MALE',
+        bio: `${name}입니다. 내담자의 회복을 돕기 위해 공감 기반 상담을 진행합니다.`,
+        specializations: [...situations, ...symptoms],
+        approaches: consultTypes.map((v) => (v === '오프라인' ? 'MEETING' : 'CALL')),
+      }
+      const res = await springFetch('/api/v1/counselor/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) throw new Error('profile failed')
+      navigate('/counselor/dashboard')
+    } catch {
+      setSubmitError('프로필 저장에 실패했어요.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -108,7 +133,7 @@ export default function CounselorProfilePage() {
         <TopNavBar title="프로필 등록" />
       </div>
 
-      <div className="flex flex-col flex-1 pb-[120px]">
+      <div className="flex flex-col flex-1 pb-[120px] md:max-w-[960px] md:mx-auto md:w-full">
         {/* 프로필 이미지 + 이름 */}
         <div className="flex gap-[16px] px-[24px] pt-[20px]">
           <button
@@ -199,18 +224,19 @@ export default function CounselorProfilePage() {
             />
           </div>
         </div>
+        {submitError && <p className="px-[24px] text-caption text-semantic-error-text">{submitError}</p>}
       </div>
 
       {/* 하단 고정 확인 버튼 */}
-      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[402px] px-[19px] pb-[34px] pt-[12px] bg-white">
+      <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[960px] px-[19px] pb-[34px] pt-[12px] bg-white">
         <Button
           type="button"
           size="lg"
           className="w-full"
-          disabled={!isValid}
+          disabled={!isValid || submitting}
           onClick={handleSubmit}
         >
-          확인
+          {submitting ? '저장 중...' : '확인'}
         </Button>
       </div>
     </div>

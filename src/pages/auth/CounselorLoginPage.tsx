@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { TopNavBar } from '@/components/ui/TopNavBar'
+import { applyCounselorAuthFromTokenResponse, routeCounselorAfterLogin } from '@/lib/counselorFlow'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -13,6 +14,7 @@ export default function CounselorLoginPage() {
   const [password, setPassword] = useState('')
   const [emailTouched, setEmailTouched] = useState(false)
   const [error, setError] = useState<string | undefined>()
+  const [submitting, setSubmitting] = useState(false)
 
   const emailError = emailTouched && email.length > 0 && !EMAIL_REGEX.test(email)
     ? '올바른 이메일 형식으로 입력해 주세요.'
@@ -20,13 +22,28 @@ export default function CounselorLoginPage() {
 
   const isValid = EMAIL_REGEX.test(email) && password.length > 0
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isValid) return
+    if (!isValid || submitting) return
     setError(undefined)
-    // TODO: API 연동 후 실제 로그인 처리
-    // 로그인 오류 시: setError('계정 정보가 올바르지 않아요.')
-    navigate('/dashboard')
+    setSubmitting(true)
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? 'http://localhost:8080'}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+      if (!res.ok) {
+        throw new Error('login failed')
+      }
+      const payload = await res.json()
+      applyCounselorAuthFromTokenResponse(payload)
+      await routeCounselorAfterLogin(navigate)
+    } catch {
+      setError('계정 정보가 올바르지 않아요.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -84,9 +101,9 @@ export default function CounselorLoginPage() {
           type="submit"
           size="lg"
           className="w-full"
-          disabled={!isValid}
+          disabled={!isValid || submitting}
         >
-          로그인
+          {submitting ? '로그인 중...' : '로그인'}
         </Button>
 
         {/* 회원가입 링크 */}

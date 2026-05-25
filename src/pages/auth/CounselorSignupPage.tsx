@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { TopNavBar } from '@/components/ui/TopNavBar'
 import { cn } from '@/lib/utils'
+import { applyCounselorAuthFromTokenResponse } from '@/lib/counselorFlow'
 
 const NAME_REGEX = /^[가-힣a-zA-Z\s]+$/
 const PHONE_REGEX = /^01[0-9]-\d{3,4}-\d{4}$/
@@ -34,6 +35,10 @@ export default function CounselorSignupPage() {
   const [codeSent, setCodeSent] = useState(false)
   const [codeVerified, setCodeVerified] = useState(false)
   const [sendingCode, setSendingCode] = useState(false)
+  const [verifyingCode, setVerifyingCode] = useState(false)
+  const [codeMessage, setCodeMessage] = useState<string | undefined>()
+  const [submitError, setSubmitError] = useState<string | undefined>()
+  const [submitting, setSubmitting] = useState(false)
 
   const nameError = nameTouched && name.length > 0 && !NAME_REGEX.test(name)
     ? '이름에 특수문자나 초성은 입력할 수 없어요.'
@@ -53,10 +58,16 @@ export default function CounselorSignupPage() {
 
   const isValid =
     NAME_REGEX.test(name) &&
-    PHONE_REGEX.test(phone) &&
     EMAIL_REGEX.test(email) &&
     codeVerified &&
     password.length >= 8
+
+  function readErrorCode(payload: unknown): string | undefined {
+    if (!payload || typeof payload !== 'object') return undefined
+    const data = payload as Record<string, unknown>
+    const code = data.code ?? data.errorCode ?? (typeof data.data === 'object' && data.data ? (data.data as Record<string, unknown>).code : undefined)
+    return typeof code === 'string' ? code : undefined
+  }
 
   const handleSendCode = async () => {
     if (!EMAIL_REGEX.test(email)) {
@@ -64,27 +75,106 @@ export default function CounselorSignupPage() {
       return
     }
     setSendingCode(true)
-    // TODO: API 연동 — 이메일 인증 코드 발송
-    await new Promise((r) => setTimeout(r, 800))
-    setSendingCode(false)
-    setCodeSent(true)
-    setCodeVerified(false)
-    setVerificationCode('')
-  }
-
-  const handleVerifyCode = () => {
-    // TODO: API 연동 — 코드 검증
-    // 임시: 코드가 6자리면 인증 성공으로 처리
-    if (verificationCode.length === 6) {
-      setCodeVerified(true)
+    setCodeMessage(undefined)
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? 'http://localhost:8080'}/api/v1/auth/email/send-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}))
+        const code = readErrorCode(payload)
+        if (code === 'EMAIL_ALREADY_VERIFIED') {
+          setCodeSent(true)
+          setCodeVerified(true)
+          setCodeMessage('이미 인증된 이메일이에요.')
+          return
+        }
+        throw new Error('send failed')
+      }
+      setCodeSent(true)
+      setCodeVerified(false)
+      setVerificationCode('')
+      setCodeMessage('인증 코드가 발송됐어요. 이메일을 확인해 주세요.')
+    } catch {
+      setCodeMessage('인증 코드 발송에 실패했어요. 잠시 후 다시 시도해 주세요.')
+    } finally {
+      setSendingCode(false)
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleVerifyCode = async () => {
+    if (verificationCode.length !== 6 || verifyingCode) return
+    setVerifyingCode(true)
+    setCodeMessage(undefined)
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? 'http://localhost:8080'}/api/v1/auth/email/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: verificationCode }),
+      })
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}))
+        const code = readErrorCode(payload)
+        if (code === 'EMAIL_VERIFICATION_NOT_FOUND') {
+          throw new Error('인증 요청 이력이 없어요. 인증 코드를 다시 받아주세요.')
+        }
+        if (code === 'EMAIL_VERIFICATION_EXPIRED') {
+          throw new Error('인증 코드가 만료됐어요. 다시 요청해 주세요.')
+        }
+        if (code === 'EMAIL_VERIFICATION_INVALID') {
+          throw new Error('인증 코드가 올바르지 않아요.')
+        }
+        throw new Error('verify failed')
+      }
+      setCodeVerified(true)
+      setCodeMessage('이메일 인증이 완료됐어요.')
+    } catch (e) {
+      setCodeVerified(false)
+      setCodeMessage(e instanceof Error ? e.message : '인증 코드 검증에 실패했어요.')
+    } finally {
+      setVerifyingCode(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isValid) return
-    // TODO: API 연동 후 실제 회원가입 처리
-    navigate('/counselor-signup-complete')
+    if (!isValid || submitting) return
+    setSubmitting(true)
+    setSubmitError(undefined)
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL ?? 'http://localhost:8080'}/api/v1/auth/counselor/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          name: name.trim(),
+        }),
+      })
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}))
+        const code = readErrorCode(payload)
+        if (code === 'EMAIL_VERIFICATION_NOT_FOUND') {
+          throw new Error('이메일 인증 요청 이력이 없어요. 인증을 다시 진행해 주세요.')
+        }
+        if (code === 'EMAIL_VERIFICATION_EXPIRED') {
+          throw new Error('이메일 인증이 만료됐어요. 인증 코드를 다시 받아주세요.')
+        }
+        if (code === 'EMAIL_NOT_VERIFIED') {
+          throw new Error('이메일 인증이 완료되지 않았어요.')
+        }
+        throw new Error('signup failed')
+      }
+      const payload = await res.json()
+      applyCounselorAuthFromTokenResponse(payload)
+      navigate('/counselor-signup-complete')
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : '회원가입에 실패했어요. 입력값을 확인해 주세요.')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -169,11 +259,10 @@ export default function CounselorSignupPage() {
           {emailError && (
             <span className="text-caption text-semantic-error-text">{emailError}</span>
           )}
-          {codeSent && !codeVerified && (
-            <span className="text-caption text-primary-600">인증 코드가 발송됐어요. 이메일을 확인해 주세요.</span>
-          )}
-          {codeVerified && (
-            <span className="text-caption text-primary-600">이메일 인증이 완료됐어요.</span>
+          {codeMessage && (
+            <span className={cn('text-caption', codeVerified ? 'text-primary-600' : 'text-semantic-error-text')}>
+              {codeMessage}
+            </span>
           )}
         </div>
 
@@ -204,10 +293,10 @@ export default function CounselorSignupPage() {
               <button
                 type="button"
                 onClick={handleVerifyCode}
-                disabled={verificationCode.length < 6}
+                disabled={verificationCode.length < 6 || verifyingCode}
                 className="absolute right-2 px-[10px] py-[5px] rounded-lg text-[10px] font-medium text-white bg-primary-600 hover:bg-primary-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                확인
+                {verifyingCode ? '확인 중' : '확인'}
               </button>
             )}
           </div>
@@ -228,6 +317,7 @@ export default function CounselorSignupPage() {
           error={password.length > 0 && password.length < 8 ? '8자 이상 입력해 주세요.' : undefined}
           autoComplete="new-password"
         />
+        {submitError && <p className="text-caption text-semantic-error-text">{submitError}</p>}
       </form>
 
       {/* 하단 고정 완료 버튼 */}
@@ -236,10 +326,10 @@ export default function CounselorSignupPage() {
           type="submit"
           size="lg"
           className="w-full"
-          disabled={!isValid}
+          disabled={!isValid || submitting}
           onClick={handleSubmit}
         >
-          완료
+          {submitting ? '가입 중...' : '완료'}
         </Button>
       </div>
     </div>
