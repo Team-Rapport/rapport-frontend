@@ -7,7 +7,7 @@ interface MeResponse {
   data?: {
     id?: number | string
     email?: string
-    role?: 'CLIENT' | 'COUNSELOR'
+    role?: 'CLIENT' | 'COUNSELOR' | 'ADMIN'
     name?: string
     isNewUser?: boolean
     newUser?: boolean
@@ -23,6 +23,7 @@ function getApiBaseUrl() {
 export default function OAuthCallbackPage() {
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.setAuth)
+  const clearAuth = useAuthStore((s) => s.clearAuth)
   const handledRef = useRef(false)
 
   useEffect(() => {
@@ -30,6 +31,9 @@ export default function OAuthCallbackPage() {
     handledRef.current = true
 
     const run = async () => {
+      // Prevent stale persisted auth (e.g. previous counselor session) from affecting callback routing.
+      clearAuth()
+
       const params = new URLSearchParams(window.location.search)
       const accessToken = params.get('accessToken')
       const refreshToken = params.get('refreshToken')
@@ -53,7 +57,7 @@ export default function OAuthCallbackPage() {
         const payload: MeResponse = await res.json()
         const me = payload?.data
 
-        if (!me?.email || !me?.name || !me?.role || !me?.id) {
+        if (!me?.email || !me?.role || !me?.id) {
           throw new Error('invalid me response')
         }
 
@@ -62,7 +66,9 @@ export default function OAuthCallbackPage() {
         const onboardingCompleted = me.onboardingCompleted === true
 
         let nextPath = '/dashboard'
-        if (isNewUser || !profileCompleted) {
+        if (me.role === 'ADMIN') {
+          nextPath = '/admin'
+        } else if (isNewUser || !profileCompleted) {
           nextPath = '/signup'
         } else if (profileCompleted && !onboardingCompleted) {
           nextPath = '/chat'
@@ -75,19 +81,20 @@ export default function OAuthCallbackPage() {
             id: String(me.id),
             email: me.email,
             role: me.role,
-            name: me.name,
+            name: me.name ?? me.email.split('@')[0] ?? '사용자',
           },
         })
 
         window.history.replaceState({}, document.title, nextPath)
         navigate(nextPath, { replace: true })
       } catch {
+        clearAuth()
         navigate('/login', { replace: true })
       }
     }
 
     void run()
-  }, [navigate, setAuth])
+  }, [clearAuth, navigate, setAuth])
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white px-6">

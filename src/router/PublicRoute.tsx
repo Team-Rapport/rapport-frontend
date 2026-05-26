@@ -23,6 +23,7 @@ export default function PublicRoute() {
     )
 
   if (isLoggedIn && !allowClientSignupPath && !allowCounselorOnboardingPath && !isOAuthCallbackPath) {
+    if (user?.role === 'ADMIN') return <Navigate to="/admin" replace />
     return <Navigate to={user?.role === 'COUNSELOR' ? '/counselor/dashboard' : '/dashboard'} replace />
   }
 

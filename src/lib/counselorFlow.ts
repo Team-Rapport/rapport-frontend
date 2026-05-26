@@ -8,7 +8,7 @@ interface ApiResponse<T> {
 }
 
 interface AuthMeResponse {
-  role?: 'CLIENT' | 'COUNSELOR'
+  role?: 'CLIENT' | 'COUNSELOR' | 'ADMIN'
   approvalStatus?: CounselorApprovalStatus
   credentialsSubmitted?: boolean
 }
@@ -30,6 +30,11 @@ export async function routeCounselorAfterLogin(navigate: (path: string, opts?: {
   const me = mePayload?.data
   const status = me?.approvalStatus
   const credentialsSubmitted = me?.credentialsSubmitted === true
+
+  if (me?.role === 'ADMIN') {
+    navigate('/admin', { replace: true })
+    return
+  }
 
   if (me?.role !== 'COUNSELOR') {
     navigate('/dashboard', { replace: true })
