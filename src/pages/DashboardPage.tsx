@@ -5,6 +5,8 @@ import { CounselorCard } from '@/components/ui/Card'
 import { Divider } from '@/components/common/Divider'
 import { AttachedReportCard } from '@/components/report/AttachedReportCard'
 import { springFetch } from '@/lib/springApi'
+import bannerImage from '@/assets/banner.png'
+import { useNotificationStore } from '@/store/notificationStore'
 
 interface BookingResponse {
   bookingId: number
@@ -71,6 +73,7 @@ export default function DashboardPage() {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
   const name = user?.name ?? '사용자'
+  const setUnreadCount = useNotificationStore((s) => s.setUnreadCount)
   const [dashboard, setDashboard] = useState<ClientDashboard | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -89,7 +92,9 @@ export default function DashboardPage() {
         const res = await springFetch('/api/v1/dashboard/client')
         if (!res.ok) throw new Error('dashboard failed')
         const payload: ApiResponse<ClientDashboard> = await res.json()
-        setDashboard(payload?.data ?? null)
+        const next = payload?.data ?? null
+        setDashboard(next)
+        setUnreadCount(next?.unreadNotificationCount ?? 0)
         setError(null)
       } catch {
         setError('대시보드 정보를 불러오지 못했어요.')
@@ -109,8 +114,6 @@ export default function DashboardPage() {
     [dashboard?.upcomingBookings],
   )
   const counselors = dashboard?.recommendedCounselors ?? []
-  const unread = dashboard?.unreadNotificationCount ?? 0
-
   return (
     <div className="px-5 py-5 flex flex-col gap-6">
       {/* Greeting */}
@@ -119,9 +122,6 @@ export default function DashboardPage() {
           안녕하세요, {name}님
         </h2>
         <p className="text-caption text-neutral-400 mt-0.5">{today}</p>
-        {unread > 0 && (
-          <p className="text-caption text-primary-700 mt-1">읽지 않은 알림 {unread}개</p>
-        )}
       </div>
       {loading && <p className="text-caption text-neutral-400">불러오는 중...</p>}
       {error && <p className="text-caption text-semantic-error-text">{error}</p>}
@@ -130,12 +130,18 @@ export default function DashboardPage() {
       <button
         type="button"
         onClick={() => navigate('/chat')}
-        className="w-full border border-primary-200 rounded-xl px-5 py-4 bg-primary-50 text-left"
+        className="w-full h-[144px] border border-primary-200 rounded-xl px-5 py-4 text-left bg-no-repeat"
+        style={{
+          backgroundColor: '#ebf3e9',
+          backgroundImage: `url(${bannerImage})`,
+          backgroundSize: '58% auto',
+          backgroundPosition: 'right 8px center',
+        }}
       >
-        <p className="text-body-lg font-medium text-primary-900">
+        <p className="text-body-lg font-medium text-primary-900 pr-[42%]">
           사전 점검 시작하기 →
         </p>
-        <p className="text-caption text-primary-800 mt-1">
+        <p className="text-caption text-primary-800 mt-1 pr-[42%]">
           AI와 대화로 나의 상태를 파악해요
         </p>
       </button>

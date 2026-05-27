@@ -7,13 +7,18 @@ import { springFetch } from '@/lib/springApi'
 import { useAuthStore } from '@/store/authStore'
 
 type Gender = 'FEMALE' | 'MALE'
-type Approach = 'MEETING' | 'CALL'
+type ConsultationMode = 'FACE_TO_FACE' | 'ONLINE' | 'MEETING' | 'CALL'
 type GenderLabel = '여성' | '남성'
-type ApproachLabel = '오프라인' | '전화 상담'
+type ConsultationModeLabel = '대면' | '비대면'
 
 const SITUATIONS = [
   '대인관계', '자아/성격', '취업/진로', '가족', '정신건강',
   '연애', '육아/출산', '따돌림', '직장', '부부관계',
+] as const
+const SYMPTOMS = [
+  '우울', '스트레스', '불안', '불면', '공황', 'PTSD', '콤플렉스',
+  '자해', '분노조절', '조현병', '조울증', '중독', 'ADHD', '대인기피',
+  '가스라이팅', '번아웃', '외로움',
 ] as const
 
 type ApiResponse<T> = {
@@ -24,11 +29,11 @@ interface CounselorProfileResponse {
   counselorGender?: Gender
   bio?: string
   specializations?: string[]
-  approaches?: Approach[]
+  symptoms?: string[]
+  approaches?: string[]
+  consultationModes?: ConsultationMode[]
   experienceYears?: number
   officeAddress?: string
-  licenseType?: string
-  licenseNumber?: string
   profileCompleted?: boolean
   requiredMissingFields?: string[]
 }
@@ -87,7 +92,8 @@ const REQUIRED_FIELD_LABELS: Record<string, string> = {
   counselorGender: '성별',
   bio: '자기소개',
   specializations: '전문 분야',
-  approaches: '상담 방식',
+  symptoms: '전문 증상',
+  consultationModes: '상담 방식',
   experienceYears: '경력 연수',
   officeAddress: '상담실 주소',
 }
@@ -99,13 +105,13 @@ export default function CounselorProfilePage() {
 
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [gender, setGender] = useState<GenderLabel[]>([])
-  const [approaches, setApproaches] = useState<ApproachLabel[]>([])
+  const [consultationModes, setConsultationModes] = useState<ConsultationModeLabel[]>([])
+  const [approaches, setApproaches] = useState<string[]>([])
   const [specializations, setSpecializations] = useState<string[]>([])
+  const [symptoms, setSymptoms] = useState<string[]>([])
   const [bio, setBio] = useState('')
   const [experienceYears, setExperienceYears] = useState('')
   const [officeAddress, setOfficeAddress] = useState('')
-  const [licenseType, setLicenseType] = useState('')
-  const [licenseNumber, setLicenseNumber] = useState('')
 
   const [profileCompleted, setProfileCompleted] = useState<boolean | null>(null)
   const [requiredMissingFields, setRequiredMissingFields] = useState<string[]>([])
@@ -128,13 +134,18 @@ export default function CounselorProfilePage() {
             ? [profile.counselorGender === 'FEMALE' ? '여성' : '남성']
             : [],
         )
-        setApproaches((profile.approaches ?? []).map((v) => (v === 'MEETING' ? '오프라인' : '전화 상담')))
+        const modeSource = profile.consultationModes?.length
+          ? profile.consultationModes
+          : (profile.approaches ?? []).filter((v) => v === 'MEETING' || v === 'CALL')
+        setConsultationModes(
+          modeSource.map((v) => (v === 'MEETING' || v === 'FACE_TO_FACE' ? '대면' : '비대면')),
+        )
+        setApproaches((profile.approaches ?? []).filter((v) => v !== 'MEETING' && v !== 'CALL'))
         setSpecializations(profile.specializations ?? [])
+        setSymptoms(profile.symptoms ?? [])
         setBio(profile.bio ?? '')
         setExperienceYears(profile.experienceYears != null ? String(profile.experienceYears) : '')
         setOfficeAddress(profile.officeAddress ?? '')
-        setLicenseType(profile.licenseType ?? '')
-        setLicenseNumber(profile.licenseNumber ?? '')
         setProfileCompleted(profile.profileCompleted ?? null)
         setRequiredMissingFields(profile.requiredMissingFields ?? [])
       } catch {
@@ -147,8 +158,9 @@ export default function CounselorProfilePage() {
   }, [])
 
   const missingFieldText = useMemo(() => {
-    if (requiredMissingFields.length === 0) return null
-    return requiredMissingFields
+    const visibleMissing = requiredMissingFields.filter((field) => field !== 'approaches')
+    if (visibleMissing.length === 0) return null
+    return visibleMissing
       .map((field) => REQUIRED_FIELD_LABELS[field] ?? field)
       .join(', ')
   }, [requiredMissingFields])
@@ -163,8 +175,9 @@ export default function CounselorProfilePage() {
 
   const isValid =
     gender.length > 0 &&
-    approaches.length > 0 &&
+    consultationModes.length > 0 &&
     specializations.length > 0 &&
+    symptoms.length > 0 &&
     bio.trim().length > 0 &&
     experienceYears.trim().length > 0 &&
     officeAddress.trim().length > 0
@@ -179,11 +192,11 @@ export default function CounselorProfilePage() {
         counselorGender: gender[0] === '여성' ? 'FEMALE' : 'MALE',
         bio: bio.trim(),
         specializations,
-        approaches: approaches.map((v) => (v === '오프라인' ? 'MEETING' : 'CALL')),
+        symptoms,
+        approaches,
+        consultationModes: consultationModes.map((v) => (v === '대면' ? 'FACE_TO_FACE' : 'ONLINE')),
         experienceYears: Number.isFinite(years) ? years : 0,
         officeAddress: officeAddress.trim(),
-        licenseType: licenseType.trim() || undefined,
-        licenseNumber: licenseNumber.trim() || undefined,
       }
 
       const res = await springFetch('/api/v1/counselor/profile', {
@@ -277,11 +290,11 @@ export default function CounselorProfilePage() {
 
           <div className="flex flex-col gap-[10px]">
             <p className="text-[14px] font-bold text-neutral-900">상담 방식</p>
-            <ChipGroup<ApproachLabel>
-              options={['오프라인', '전화 상담']}
-              selected={approaches}
+            <ChipGroup<ConsultationModeLabel>
+              options={['대면', '비대면']}
+              selected={consultationModes}
               multi
-              onChange={(v) => setApproaches(v as ApproachLabel[])}
+              onChange={(v) => setConsultationModes(v as ConsultationModeLabel[])}
             />
           </div>
         </div>
@@ -300,6 +313,18 @@ export default function CounselorProfilePage() {
               onChange={setSpecializations}
             />
           </div>
+
+          <div className="flex flex-col gap-[10px]">
+            <p className="text-[14px] font-bold text-neutral-900">전문 증상</p>
+            <ChipGroup<string>
+              options={SYMPTOMS}
+              selected={symptoms}
+              multi
+              onChange={setSymptoms}
+            />
+          </div>
+
+          <div className="h-[4px] bg-neutral-100 w-full" />
 
           <label className="flex flex-col gap-2">
             <span className="text-[14px] font-bold text-neutral-900">자기소개</span>
@@ -333,25 +358,6 @@ export default function CounselorProfilePage() {
             />
           </label>
 
-          <label className="flex flex-col gap-2">
-            <span className="text-[14px] font-bold text-neutral-900">자격증 종류 (선택)</span>
-            <input
-              value={licenseType}
-              onChange={(e) => setLicenseType(e.target.value)}
-              className="w-full h-12 rounded-[8px] border border-neutral-200 px-3 text-body-md focus:outline-none focus:border-primary-400"
-              placeholder="예: 임상심리사"
-            />
-          </label>
-
-          <label className="flex flex-col gap-2">
-            <span className="text-[14px] font-bold text-neutral-900">자격증 번호 (선택)</span>
-            <input
-              value={licenseNumber}
-              onChange={(e) => setLicenseNumber(e.target.value)}
-              className="w-full h-12 rounded-[8px] border border-neutral-200 px-3 text-body-md focus:outline-none focus:border-primary-400"
-              placeholder="예: 2026-12345"
-            />
-          </label>
         </div>
 
         {submitError && <p className="px-[24px] text-caption text-semantic-error-text">{submitError}</p>}

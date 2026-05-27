@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
+import { TopNavBar } from '@/components/ui/TopNavBar'
 import { springFetch } from '@/lib/springApi'
 
 type BookingStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED' | string
 
 interface CounselorBookingItem {
   bookingId: number
+  clientId?: number
   clientName?: string
   status?: BookingStatus
   bookedDate?: string
@@ -39,10 +42,12 @@ function formatDateTime(bookedDate?: string, bookedStartTime?: string) {
 }
 
 export default function CounselorBookingsPage() {
+  const navigate = useNavigate()
   const [bookings, setBookings] = useState<CounselorBookingItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [processingId, setProcessingId] = useState<number | null>(null)
+  const [intakeRequestingId, setIntakeRequestingId] = useState<number | null>(null)
 
   const pendingBookings = useMemo(
     () => bookings.filter((booking) => booking.status === 'PENDING'),
@@ -73,7 +78,7 @@ export default function CounselorBookingsPage() {
     setProcessingId(bookingId)
     try {
       const res = await springFetch(`/api/v1/counselor/bookings/${bookingId}/${action}`, {
-        method: 'POST',
+        method: 'PATCH',
       })
       if (!res.ok) throw new Error('action failed')
       await fetchBookings()
@@ -84,12 +89,47 @@ export default function CounselorBookingsPage() {
     }
   }
 
+  const handleOpenChat = async (booking: CounselorBookingItem) => {
+    try {
+      const roomsRes = await springFetch('/api/v1/chat/rooms')
+      if (!roomsRes.ok) throw new Error('rooms failed')
+      const roomsPayload: ApiResponse<Array<{ roomId: number; clientId?: number }>> = await roomsRes.json()
+      const matched = (roomsPayload?.data ?? []).find((room) => room.clientId === booking.clientId)
+      if (matched?.roomId) {
+        navigate(`/counselor/chat/${matched.roomId}`)
+        return
+      }
+      navigate('/counselor/chat')
+    } catch {
+      setError('채팅방을 여는 데 실패했어요.')
+    }
+  }
+
+  const handleRequestIntakeForm = async (bookingId: number) => {
+    if (intakeRequestingId != null) return
+    setIntakeRequestingId(bookingId)
+    try {
+      const res = await springFetch(`/api/v1/counselor/bookings/${bookingId}/intake-form/request`, {
+        method: 'POST',
+      })
+      if (!res.ok) throw new Error('request failed')
+      setError(null)
+    } catch {
+      setError('접수면접지 요청 전송에 실패했어요.')
+    } finally {
+      setIntakeRequestingId(null)
+    }
+  }
+
   return (
     <div className="min-h-full bg-neutral-50 p-4 md:p-8">
       <div className="max-w-[1200px] mx-auto flex flex-col gap-4">
+        <div className="rounded-xl border border-neutral-100 bg-white px-4 py-2">
+          <TopNavBar title="예약 요청 관리" onBack={() => navigate(-1)} />
+        </div>
+
         <div className="flex items-end justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900">예약 요청 관리</h1>
             <p className="text-sm text-neutral-500 mt-1">대기 중인 예약을 우선 처리해 주세요.</p>
           </div>
           <span className="text-sm px-3 py-1 rounded-full bg-semantic-warning-bg text-semantic-warning-text">
@@ -142,6 +182,26 @@ export default function CounselorBookingsPage() {
                       className="h-9 px-4 rounded-lg bg-primary-600 text-white text-sm disabled:opacity-50"
                     >
                       수락
+                    </button>
+                  </div>
+                )}
+
+                {booking.status === 'ACCEPTED' && (
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => void handleRequestIntakeForm(booking.bookingId)}
+                      disabled={intakeRequestingId === booking.bookingId}
+                      className="h-9 px-4 rounded-lg border border-primary-600 text-primary-700 text-sm disabled:opacity-50"
+                    >
+                      {intakeRequestingId === booking.bookingId ? '전송 중...' : '접수면접지 요청'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleOpenChat(booking)}
+                      className="h-9 px-4 rounded-lg bg-primary-600 text-white text-sm"
+                    >
+                      채팅 열기
                     </button>
                   </div>
                 )}

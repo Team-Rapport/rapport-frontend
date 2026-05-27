@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { Star } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { LabelBadge } from '@/components/common/LabelBadge'
@@ -11,6 +12,7 @@ interface CounselorDetail {
   name: string
   bio?: string
   specializations?: string[]
+  symptoms?: string[]
   approaches?: string[]
   consultationModes?: Array<'CALL' | 'MEETING' | 'ONLINE' | 'FACE_TO_FACE' | string>
   minPrice?: number
@@ -37,13 +39,59 @@ interface ReviewResponse {
   createdAt?: string
 }
 
-interface PageResponse<T> {
-  content?: T[]
-}
-
 interface ApiResponse<T> {
   success?: boolean
   data?: T
+}
+
+function normalizeReviews(payload: unknown): ReviewResponse[] {
+  const root = payload as {
+    data?: unknown
+    content?: unknown
+    items?: unknown
+    list?: unknown
+    reviews?: unknown
+  }
+  const data = root?.data as {
+    content?: unknown
+    items?: unknown
+    list?: unknown
+    reviews?: unknown
+    data?: unknown
+  } | undefined
+
+  const candidates = [
+    root?.data,
+    root?.content,
+    root?.items,
+    root?.list,
+    root?.reviews,
+    data?.content,
+    data?.items,
+    data?.list,
+    data?.reviews,
+    data?.data,
+  ]
+
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) return candidate as ReviewResponse[]
+  }
+  return []
+}
+
+function renderRatingStars(rating?: number) {
+  const safe = Math.max(0, Math.min(5, Math.round(rating ?? 0)))
+  return (
+    <div className="flex items-center gap-0.5">
+      {Array.from({ length: 5 }).map((_, idx) => (
+        <Star
+          key={idx}
+          size={14}
+          className={idx < safe ? 'text-amber-400 fill-amber-400' : 'text-neutral-300'}
+        />
+      ))}
+    </div>
+  )
 }
 
 export default function CounselorDetailPage() {
@@ -75,14 +123,8 @@ export default function CounselorDetailPage() {
           setSessionTypes(typePayload?.data ?? [])
         }
         if (reviewRes.ok) {
-          const reviewPayload: ApiResponse<PageResponse<ReviewResponse> | ReviewResponse[]> = await reviewRes.json()
-          const data = reviewPayload?.data
-          const normalized = Array.isArray(data)
-            ? data
-            : Array.isArray(data?.content)
-              ? data.content
-              : []
-          setReviews(normalized)
+          const reviewPayload = await reviewRes.json().catch(() => ({}))
+          setReviews(normalizeReviews(reviewPayload))
         }
 
         setError(null)
@@ -101,12 +143,21 @@ export default function CounselorDetailPage() {
   )
 
   const modeLabels = useMemo(() => {
-    return (counselor?.consultationModes ?? []).map((mode) => {
+    const modeSource = counselor?.consultationModes?.length
+      ? counselor.consultationModes
+      : (counselor?.approaches ?? []).filter((v) => v === 'MEETING' || v === 'CALL')
+
+    return modeSource.map((mode) => {
       if (mode === 'CALL' || mode === 'ONLINE') return '비대면(전화)'
       if (mode === 'MEETING' || mode === 'FACE_TO_FACE') return '대면'
       return mode
     })
-  }, [counselor?.consultationModes])
+  }, [counselor?.consultationModes, counselor?.approaches])
+
+  const approachLabels = useMemo(
+    () => (counselor?.approaches ?? []).filter((v) => v !== 'MEETING' && v !== 'CALL'),
+    [counselor?.approaches],
+  )
 
   const minPrice = useMemo(() => {
     if (counselor?.minPrice != null) return counselor.minPrice
@@ -166,12 +217,27 @@ export default function CounselorDetailPage() {
       </section>
 
       {/* 상담 기법 */}
+      {approachLabels.length > 0 && (
+        <>
+          <Divider />
+          <section className="px-5 py-4">
+            <h3 className="text-[16px] font-bold text-neutral-900 mb-3">상담 기법</h3>
+            <div className="flex flex-wrap gap-2">
+              {approachLabels.map((approach) => (
+                <LabelBadge key={approach}>{approach}</LabelBadge>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
+
+      {/* 전문 증상 */}
       <Divider />
       <section className="px-5 py-4">
-        <h3 className="text-[16px] font-bold text-neutral-900 mb-3">상담 기법</h3>
+        <h3 className="text-[16px] font-bold text-neutral-900 mb-3">전문 증상</h3>
         <div className="flex flex-wrap gap-2">
-          {(counselor.approaches ?? []).map((approach) => (
-            <LabelBadge key={approach}>{approach}</LabelBadge>
+          {(counselor.symptoms ?? []).map((symptom) => (
+            <LabelBadge key={symptom}>{symptom}</LabelBadge>
           ))}
         </div>
       </section>
@@ -181,7 +247,6 @@ export default function CounselorDetailPage() {
       <section className="px-5 py-4">
         <h3 className="text-[16px] font-bold text-neutral-900 mb-3">경력 및 학력</h3>
         <div className="flex flex-col gap-2">
-          <p className="text-body-md text-neutral-800">{counselor.licenseType ?? '자격 정보 없음'}</p>
           <p className="text-caption text-neutral-600">
             경력 {counselor.experienceYears ?? 0}년
           </p>
@@ -213,7 +278,9 @@ export default function CounselorDetailPage() {
           ) : (
             reviews.map((review, idx) => (
               <div key={review.reviewId ?? idx} className="rounded-md border border-neutral-100 bg-neutral-50 px-3 py-3">
-                <p className="text-caption text-neutral-700">평점 {review.rating ?? '-'}</p>
+                <div className="flex items-center gap-2">
+                  {renderRatingStars(review.rating)}
+                </div>
                 <p className="text-caption text-neutral-800 mt-1 whitespace-pre-wrap">
                   {review.content?.trim() || review.comment?.trim() || '내용 없음'}
                 </p>

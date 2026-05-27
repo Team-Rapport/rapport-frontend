@@ -8,6 +8,7 @@ type SessionTab = 'upcoming' | 'completed'
 
 interface BookingItem {
   bookingId: number
+  counselorId?: number
   counselorName: string
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELLED' | 'COMPLETED' | string
   bookedDate?: string
@@ -47,6 +48,7 @@ export default function MySessionsPage() {
   const [bookings, setBookings] = useState<BookingItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [openingChatBookingId, setOpeningChatBookingId] = useState<number | null>(null)
 
   useEffect(() => {
     const run = async () => {
@@ -73,6 +75,55 @@ export default function MySessionsPage() {
         : b.status === 'COMPLETED',
     )
   }, [bookings, activeTab])
+
+  const openCounselorChatRoom = async (booking: BookingItem) => {
+    if (openingChatBookingId != null) return
+    setOpeningChatBookingId(booking.bookingId)
+    setError(null)
+    try {
+      const roomsRes = await springFetch('/api/v1/chat/rooms')
+      if (!roomsRes.ok) throw new Error('rooms fetch failed')
+      const roomsPayload: ApiResponse<Array<{ roomId?: number; counselorId?: number; counselorName?: string }>> = await roomsRes.json()
+      const rooms = roomsPayload?.data ?? []
+
+      const matched = rooms.find((room) => {
+        if (booking.counselorId && room.counselorId) {
+          return room.counselorId === booking.counselorId
+        }
+        return !!room.counselorName && room.counselorName === booking.counselorName
+      })
+      if (matched?.roomId) {
+        navigate(`/counselor/chat/${matched.roomId}`)
+        return
+      }
+
+      const createBodies: Array<Record<string, number>> = []
+      if (booking.counselorId) createBodies.push({ counselorId: booking.counselorId, bookingId: booking.bookingId })
+      if (booking.counselorId) createBodies.push({ counselorId: booking.counselorId })
+      createBodies.push({ bookingId: booking.bookingId })
+
+      for (const body of createBodies) {
+        const createRes = await springFetch('/api/v1/chat/rooms', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+        if (!createRes.ok) continue
+        const createPayload: ApiResponse<{ roomId?: number; id?: number }> = await createRes.json().catch(() => ({}))
+        const roomId = createPayload?.data?.roomId ?? createPayload?.data?.id
+        if (roomId) {
+          navigate(`/counselor/chat/${roomId}`)
+          return
+        }
+      }
+
+      throw new Error('create room failed')
+    } catch {
+      setError('채팅방 입장에 실패했어요. 잠시 후 다시 시도해 주세요.')
+    } finally {
+      setOpeningChatBookingId(null)
+    }
+  }
 
   return (
     <div className="flex flex-col">
@@ -138,6 +189,16 @@ export default function MySessionsPage() {
                   onClick={() => navigate(`/review/${session.bookingId}`)}
                 >
                   리뷰 작성
+                </button>
+              )}
+              {session.status === 'ACCEPTED' && (
+                <button
+                  type="button"
+                  className="mt-2 text-body-md text-primary-600"
+                  onClick={() => void openCounselorChatRoom(session)}
+                  disabled={openingChatBookingId === session.bookingId}
+                >
+                  {openingChatBookingId === session.bookingId ? '채팅방 여는 중...' : '채팅방 입장'}
                 </button>
               )}
             </div>
