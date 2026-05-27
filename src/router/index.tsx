@@ -31,11 +31,20 @@ import ReviewPage from '@/pages/ReviewPage'
 import MyReportsPage from '@/pages/MyReportsPage'
 import EditProfilePage from '@/pages/EditProfilePage'
 import CounselorDashboardPage from '@/pages/CounselorDashboardPage'
+import CounselorBookingsPage from '@/pages/CounselorBookingsPage'
+import AdminPage from '@/pages/AdminPage'
+import CounselorProfileEditPage from '@/pages/CounselorProfileEditPage'
+import CounselorMyPage from '@/pages/CounselorMyPage'
+import CounselorChatRoomsPage from '@/pages/CounselorChatRoomsPage'
+import CounselorChatRoomPage from '@/pages/CounselorChatRoomPage'
+import CounselorSessionTypeSettingsPage from '@/pages/CounselorSessionTypeSettingsPage'
+import CounselorSchedulePage from '@/pages/CounselorSchedulePage'
 
 function RootRedirect() {
   const isLoggedIn = useAuthStore((s) => s.isLoggedIn)
   const user = useAuthStore((s) => s.user)
   if (!isLoggedIn) return <Navigate to="/login" replace />
+  if (user?.role === 'ADMIN') return <Navigate to="/admin" replace />
   return <Navigate to={user?.role === 'COUNSELOR' ? '/counselor/dashboard' : '/dashboard'} replace />
 }
 
@@ -67,6 +76,7 @@ export const router = createBrowserRouter([
   {
     element: <PrivateRoute />,
     children: [
+      { path: '/admin', element: <AdminPage /> },
       { path: '/counselor-credential', element: <CounselorCredentialPage /> },
       { path: '/counselor-credential-complete', element: <CounselorCredentialCompletePage /> },
       { path: '/counselor-pending', element: <CounselorPendingPage /> },
@@ -85,9 +95,17 @@ export const router = createBrowserRouter([
           { path: '/mypage/profile', element: <EditProfilePage /> },
           { path: '/my/reports', element: <MyReportsPage /> },
           { path: '/intake-form', element: <IntakeFormPage /> },
+          { path: '/intake-form/:bookingId', element: <IntakeFormPage /> },
           { path: '/sessions', element: <MySessionsPage /> },
           { path: '/review/:sessionId', element: <ReviewPage /> },
           { path: '/counselor/dashboard', element: <CounselorDashboardPage /> },
+          { path: '/counselor/bookings', element: <CounselorBookingsPage /> },
+          { path: '/counselor/profile/edit', element: <CounselorProfileEditPage /> },
+          { path: '/counselor/mypage', element: <CounselorMyPage /> },
+          { path: '/counselor/chat', element: <CounselorChatRoomsPage /> },
+          { path: '/counselor/chat/:roomId', element: <CounselorChatRoomPage /> },
+          { path: '/counselor/session-types', element: <CounselorSessionTypeSettingsPage /> },
+          { path: '/counselor/schedule', element: <CounselorSchedulePage /> },
         ],
       },
     ],
